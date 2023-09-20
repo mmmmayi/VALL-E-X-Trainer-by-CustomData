@@ -16,6 +16,7 @@ from customs.make_custom_dataset import create_dataset
 Place the necessary audio files in data_dir.
 Transcription, tokenization, etc. of the audio files are done by the create_dataset function.
 
+'''
 data_dir
 ├── bpe_69.json
 ├── utt1.wav
@@ -23,6 +24,7 @@ data_dir
 ├── utt3.wav
 ......
 └── utt{n}.wav
+'''
 
 data_dir = "your data_dir"
 create_dataset(data_dir, dataloader_process_only=True)
