@@ -1,14 +1,14 @@
 # VALL-E X: Multilingual Text-to-Speech Synthesis and Voice Cloning 🔊
 
-##Fork README
+## Fork README
 This repository eliminates the cumbersome dependencies of VALL-E-X and allows for fine tuning on custom data sets.
 Please refer to the original READ ME as the basic operation has not been changed at all from the original.
 
-##Current Accomplishments
+## Current Accomplishments
 The training code worked.
 It was possible to train on custom datasets.
 
-##How to create and use CustomDataset
+## How to create and use CustomDataset
 ```python
 from customs.make_custom_dataset import create_dataset
 
@@ -28,11 +28,11 @@ data_dir = "your data_dir"
 create_dataset(data_dir, dataloader_process_only=True)
 ```
 
-#When Training 
+# When Training 
 When training, please specify data_dir for training data and data_dir for validation data as "--train_dir" and "--valid_dir" as arguments on the command line.
 
 
-##Original README
+## Original README
 [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/qCBRmAnTxg)
 <br>
 English | [中文](README-ZH.md)
