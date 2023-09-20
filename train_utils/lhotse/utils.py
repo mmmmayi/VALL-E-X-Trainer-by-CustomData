@@ -1,3 +1,8 @@
+import random
+import numpy as np
+import torch
+import uuid
+
 def fix_random_seed(random_seed: int):
     """
     Set the same random seed for the libraries and modules that Lhotse interacts with.
