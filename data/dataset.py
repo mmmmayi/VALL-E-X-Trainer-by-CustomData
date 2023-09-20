@@ -25,6 +25,9 @@ from tokenizers import Tokenizer
 from typing import Union, List
 import numpy as np
 from tqdm import tqdm
+from utils.g2p import PhonemeBpeTokenizer
+from data.collation import get_text_token_collater
+text_collater = get_text_token_collater()
 
 _pad        = '_'
 _punctuation = ',.!?-~…'
@@ -135,12 +138,11 @@ class AudioDataset(torch.utils.data.Dataset):
             lines = f.readlines()
         ls = [l.split("|") for l in lines]
         ls_T = list(zip(*ls))
-        del ls_T[-1]
+        #del ls_T[-1]
         self.h5_paths, self.durations, self.langs, self.texts = \
             list(ls_T[0]), list(ls_T[1]), list(ls_T[2]), list(ls_T[3])
         self.durations = [float(dur) for dur in self.durations]
-        self.tokenizer = Tokenizer.from_file(tokenizer_path)
-
+        self.tokenizer = PhonemeBpeTokenizer(tokenizer_path)
         self._archive = None
 
     def __len__(self):
@@ -159,17 +161,23 @@ class AudioDataset(torch.utils.data.Dataset):
         h5_path = self.h5_paths[idx]
         sub = archive[h5_path]
         audio_tokens = sub['audio'][()]
-        phone_tokens = sub['text'][()]
+        #phone_tokens = sub['text'][()]
         dur = self.durations[idx]
         lang = self.langs[idx]
         text = self.texts[idx]
         # tokenization should be done within dataloader
-        phones = seq2phone(phone_tokens)
-        phones = phones.replace(" ", "_")
+        #phones = seq2phone(phone_tokens)
+        #phones = phones.replace(" ", "_")
+        phonemes, langs = self.tokenizer.tokenize(text=f"{text}".strip())
+        cptpho_tokens, enroll_x_lens = text_collater([phonemes])
+        cptpho_tokens = cptpho_tokens.squeeze(0)
+        text_token_lens = enroll_x_lens[0]
+        '''
         if not len(phones):
             cptpho_tokens = self.tokenizer.encode(text).ids
         else:
             cptpho_tokens = self.tokenizer.encode(phones).ids
+        '''
         assert len(cptpho_tokens)
         return {
             'utt_id': h5_path,
@@ -177,9 +185,9 @@ class AudioDataset(torch.utils.data.Dataset):
             'audio': None,
             'audio_lens': None,
             'audio_features': audio_tokens,
-            'audio_features_lens': len(audio_tokens.T),
+            'audio_features_lens': audio_tokens.shape[1],
             'text_tokens': np.array(cptpho_tokens),
-            'text_tokens_lens': len(cptpho_tokens),
+            'text_tokens_lens': text_token_lens,
             'language': language_dict[lang],
         }
 
@@ -203,7 +211,7 @@ def collate(batch):
     for i, b in enumerate(batch):
         audio_features = b['audio_features']
         audio_features_lens = b['audio_features_lens']
-        audio_features_s[i, :audio_features_lens, :] = torch.LongTensor(audio_features.T)
+        audio_features_s[i, :audio_features_lens, :] = torch.LongTensor(audio_features)
 
         text_tokens = b['text_tokens']
         text_tokens_lens = b['text_tokens_lens']
