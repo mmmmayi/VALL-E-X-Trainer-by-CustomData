@@ -49,6 +49,7 @@ from torch.utils.tensorboard import SummaryWriter
 from train_utils.utils import *
 from train_utils.icefall.utils import *
 from train_utils.lhotse.utils import *
+from train_utils.model import get_model
 from customs.make_custom_dataset import create_dataset
 
 LRSchedulerType = torch.optim.lr_scheduler._LRScheduler

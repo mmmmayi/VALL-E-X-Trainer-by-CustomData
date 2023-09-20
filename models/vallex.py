@@ -548,6 +548,7 @@ class VALLF(nn.Module):
 
         if train_stage == 0:
             total_loss = total_loss / 2.0
+        print("total_loss:", total_loss)
 
         return ((x, codes), total_loss, metrics)
 
