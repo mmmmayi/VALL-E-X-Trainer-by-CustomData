@@ -12,11 +12,11 @@ It was possible to train on custom datasets.
 ```python
 from customs.make_custom_dataset import create_dataset
 
-#How should the data_dir be created?
+'''
+How should the data_dir be created?
 Place the necessary audio files in data_dir.
 Transcription, tokenization, etc. of the audio files are done by the create_dataset function.
 
-'''
 data_dir
 ├── bpe_69.json
 ├── utt1.wav
