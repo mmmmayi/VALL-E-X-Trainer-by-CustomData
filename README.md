@@ -1,5 +1,5 @@
 # VALL-E X: Multilingual Text-to-Speech Synthesis and Voice Cloning 🔊
-
+ 
 ## Fork README
 This repository eliminates the cumbersome dependencies of VALL-E-X and allows for fine tuning on custom data sets.
 Please refer to the original README as the basic operation has not been changed at all from the original.
