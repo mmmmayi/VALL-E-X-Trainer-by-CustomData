@@ -761,6 +761,7 @@ class VALLE(VALLF):
         x_lens: torch.Tensor,
         y: Union[torch.Tensor, PromptedFeatures],
         y_lens: Union[torch.Tensor, PromptedFeatures],
+        langid: torch.Tensor,
         reduction: str = "sum",
         train_stage: int = 0,
         **kwargs,
@@ -802,7 +803,7 @@ class VALLE(VALLF):
         y_mask_int = y_mask.type(torch.int64)
 
         text = x
-        codes = y.type(torch.int64) * (1 - y_mask_int.unsqueeze(dim=-1))
+        codes = y.type(torch.int64) * (1 - y_mask_int.unsqueeze(dim=-1))#将填充位置的音频codes设置为0
 
         y, targets = self.pad_y_eos(
             codes[..., 0], y_mask_int, eos_id=NUM_AUDIO_TOKENS
@@ -823,6 +824,7 @@ class VALLE(VALLF):
         # AR Decoder
         if train_stage in [0, 1]:
             x = self.ar_text_embedding(text)
+            x += self.ar_language_embedding(langid)
             x = self.ar_text_prenet(x)
             x = self.ar_text_position(x)
 
@@ -891,6 +893,7 @@ class VALLE(VALLF):
             )[0]
 
             x = self.nar_text_embedding(text)
+            x += self.nar_language_embedding(langid)
             x = self.nar_text_prenet(x)
             x = self.nar_text_position(x)
 
