@@ -14,6 +14,7 @@ if torch.cuda.is_available():
 from vocos import Vocos
 
 def get_model(device):
+    '''
     url = 'https://huggingface.co/Plachta/VALL-E-X/resolve/main/vallex-checkpoint.pt'
 
     checkpoints_dir = "./checkpoints"
@@ -35,6 +36,7 @@ def get_model(device):
                 "\n Model weights download failed, please go to 'https://huggingface.co/Plachta/VALL-E-X/resolve/main/vallex-checkpoint.pt'"
                 "\n manually download model weights and put it to {} .".format(os.getcwd() + "\checkpoints"))
     # VALL-E
+    '''
     model = VALLE(
         N_DIM,
         NUM_HEAD,
@@ -47,11 +49,11 @@ def get_model(device):
         prepend_bos=True,
         num_quantizers=NUM_QUANTIZERS,
     ).to(device)
-    checkpoint = torch.load(os.path.join(checkpoints_dir, model_checkpoint_name), map_location='cpu')
-    missing_keys, unexpected_keys = model.load_state_dict(
-        checkpoint["model"], strict=True
-    )
-    assert not missing_keys
+    #checkpoint = torch.load(os.path.join(checkpoints_dir, model_checkpoint_name), map_location='cpu')
+    #missing_keys, unexpected_keys = model.load_state_dict(
+    #      checkpoint["model"], strict=True
+    #)
+    #assert not missing_keys
 
     # Encodec
     codec = AudioTokenizer(device)
