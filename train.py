@@ -244,6 +244,13 @@ def get_parser():
     )
 
     parser.add_argument(
+        "--lang",
+        nargs="+",
+        default=["zn"],
+        help="Languages to use (e.g., zh en). Defaults to ['zn'].",
+    )
+
+    parser.add_argument(
         "--visualize",
         type=str2bool,
         default=False,
@@ -971,8 +978,8 @@ def run(rank, world_size, args):
     else:
         sampler_state_dict = None
 
-    train_dl = create_dataset(params.train_dir, dataloader_process_only=False)
-    valid_dl = create_dataset(params.valid_dir, dataloader_process_only=False)
+    train_dl = create_dataset(params.train_dir, params.lang)
+    valid_dl = create_dataset(params.valid_dir, params.lang)
 
     scaler = GradScaler(
         enabled=(params.dtype in ["fp16", "float16"]), init_scale=1.0
