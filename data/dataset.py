@@ -24,6 +24,7 @@ import math
 from typing import Union, List
 import numpy as np
 from tqdm import tqdm
+from fairseq.data.indexed_dataset import MMapIndexedDataset
 #from utils.g2p import PhonemeBpeTokenizer
 from data.collation import get_text_token_collater
 from fairseq.data import Dictionary
@@ -175,12 +176,12 @@ class AudioDataset(torch.utils.data.Dataset):
         st_dataset = data_utils.load_indexed_dataset(temp_data_path, self.st_dict, None)
         
         temp_data_path = os.path.join(
-            self.data_dir, prefix,"dur",'train'
+            self.data_dir, prefix,"dur_bin",'train'
         )
         assert indexed_dataset.dataset_exists(temp_data_path, impl=None), temp_data_path
-        dur_dataset = data_utils.load_indexed_dataset(temp_data_path, None, None)
+        dur_dataset = MMapIndexedDataset(temp_data_path)
 
-        assert len(at_dataset) == len(st_dataset) == len(dur_dataset), "at_dataset and st_dataset have different lengths"
+        assert len(at_dataset[0]) == len(st_dataset) == len(dur_dataset), "at_dataset and st_dataset have different lengths"
         return at_dataset, st_dataset, dur_dataset,len(st_dataset)
 
     def __len__(self):
@@ -188,9 +189,9 @@ class AudioDataset(torch.utils.data.Dataset):
 
     def get_dur(self, idx):
         if self.lang == "zh":
-            return float(self.zh_dur[idx].item())
+            return self.zh_dur[idx][0].item() / 1000.0
         if self.lang == "en":
-            return float(self.en_dur[idx].item())
+            return self.en_dur[idx][0].item() / 1000.0
 
     def set_lang(self):
         """随机选择一种语言并赋值给 self.lang。"""
@@ -207,7 +208,10 @@ class AudioDataset(torch.utils.data.Dataset):
         :return: torch.LongTensor，形状 [L, 8]
         """
         sequences = []
+        print(len(data))
         for ds in data:
+            print(idx)
+            print(len(ds))
             seq = ds[idx]
             if isinstance(seq, np.ndarray):
                 seq = torch.from_numpy(seq)

@@ -1,4 +1,3 @@
-import h5py
 import glob
 import torch
 import numpy as np
