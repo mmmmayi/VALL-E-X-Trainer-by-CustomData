@@ -150,24 +150,32 @@ class AudioDataset(torch.utils.data.Dataset):
         assert len(lang)>0, "lang must be in ['zh','en']"
         self.len=0
         self.lang_id_dict = {}
+        # 保存各语言的 AT 分片路径，便于在异常时定位
+        self.zh_at_paths = None
+        self.en_at_paths = None
         if 'zh' in lang:
-            self.zh_at_dataset, self.zh_st_dataset, self.zh_dur, self.zh_datanum = self.load_data("data_wenet")
+            self.zh_at_dataset, self.zh_st_dataset, self.zh_dur, self.zh_datanum, self.zh_at_paths = self.load_data("data_wenet")
             self.len=self.zh_datanum
             self.lang_id_dict["zh"] = 0
             self.lang = "zh"
         if 'en' in lang:
-            self.en_at_dataset, self.en_st_dataset, self.en_dur, self.en_datanum = self.load_data("data_libri_12s")
+            self.en_at_dataset, self.en_st_dataset, self.en_dur, self.en_datanum, self.en_at_paths = self.load_data("data_libri_12s")
             self.len = max(self.len,self.en_datanum)
             self.lang_id_dict["en"] = 1
             self.lang = "en"
 
     def load_data(self, prefix):
         at_dataset=[]
+        at_paths=[]
         for i in range(self.num_quantizers):
             temp_data_path = os.path.join(
-            self.data_dir, prefix,"data_bin_at_{}".format(i),'train'
+                self.data_dir, prefix,"data_bin_at_{}".format(i),'train'
             )
-            at_dataset.append(data_utils.load_indexed_dataset(temp_data_path, self.at_dict, None))
+            # 先检查文件是否存在
+            assert indexed_dataset.dataset_exists(temp_data_path, impl=None), f"Missing indexed dataset files for: {temp_data_path} (expect train.bin/train.idx)"
+            ds_i = data_utils.load_indexed_dataset(temp_data_path, self.at_dict, None)
+            at_dataset.append(ds_i)
+            at_paths.append(temp_data_path)
 
         temp_data_path = os.path.join(
             self.data_dir, prefix,"data_bin_st",'train'
@@ -181,8 +189,27 @@ class AudioDataset(torch.utils.data.Dataset):
         assert indexed_dataset.dataset_exists(temp_data_path, impl=None), temp_data_path
         dur_dataset = MMapIndexedDataset(temp_data_path)
 
-        assert len(at_dataset[0]) == len(st_dataset) == len(dur_dataset), "at_dataset and st_dataset have different lengths"
-        return at_dataset, st_dataset, dur_dataset,len(st_dataset)
+        # 长度一致性检查：所有 AT 分片 与 ST/DUR 长度一致
+        base_len = len(st_dataset)
+        assert base_len == len(dur_dataset), "st_dataset and dur_dataset have different lengths"
+        for i, ds_i in enumerate(at_dataset):
+            assert len(ds_i) == base_len, (
+                f"AT quantizer {i} length mismatch: len={len(ds_i)} != {base_len}. Path: {at_paths[i]}"
+            )
+
+        # 读取健壮性检查：尝试访问首尾，尽早暴露 .idx/.bin 不匹配问题
+        for i, ds_i in enumerate(at_dataset):
+            for probe_idx in (0, base_len - 1):
+                try:
+                    _ = ds_i[probe_idx]
+                except Exception as e:
+                    raise RuntimeError(
+                        f"Failed to read AT dataset (quantizer {i}) at index {probe_idx}. "
+                        f"Path: {at_paths[i]}. This usually indicates train.idx and train.bin are inconsistent/corrupted. "
+                        f"Please re-build this shard. Original error: {repr(e)}"
+                    )
+
+        return at_dataset, st_dataset, dur_dataset, base_len, at_paths
 
     def __len__(self):
         return self.len
@@ -208,11 +235,23 @@ class AudioDataset(torch.utils.data.Dataset):
         :return: torch.LongTensor，形状 [L, 8]
         """
         sequences = []
-        print(len(data))
-        for ds in data:
-            print(idx)
-            print(len(ds))
-            seq = ds[idx]
+        # 选择对应语言的 AT 路径，便于异常时定位
+        at_paths = None
+        if self.lang == "zh":
+            at_paths = self.zh_at_paths
+        elif self.lang == "en":
+            at_paths = self.en_at_paths
+
+        for i, ds in enumerate(data):
+            try:
+                seq = ds[idx]
+            except Exception as e:
+                path_hint = at_paths[i] if at_paths and i < len(at_paths) else "<unknown>"
+                raise RuntimeError(
+                    f"Failed to fetch item idx={idx} from AT quantizer {i}. Path: {path_hint}. "
+                    f"len(ds)={len(ds)}. This likely means the indexed dataset files are broken (offset > bin size). "
+                    f"Please re-build this shard. Original error: {repr(e)}"
+                )
             if isinstance(seq, np.ndarray):
                 seq = torch.from_numpy(seq)
             elif not torch.is_tensor(seq):
