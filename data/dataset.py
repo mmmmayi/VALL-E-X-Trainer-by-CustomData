@@ -18,6 +18,7 @@
 modified from lhoste.dataset.speech_synthesis.py
 """
 import os
+import glob
 import torch
 import math
 #from tokenizers import Tokenizer
@@ -25,6 +26,7 @@ from typing import Union, List
 import numpy as np
 from tqdm import tqdm
 from fairseq.data.indexed_dataset import MMapIndexedDataset
+from torch.utils.data import ConcatDataset
 #from utils.g2p import PhonemeBpeTokenizer
 from data.collation import get_text_token_collater
 from fairseq.data import Dictionary
@@ -168,14 +170,37 @@ class AudioDataset(torch.utils.data.Dataset):
         at_dataset=[]
         at_paths=[]
         for i in range(self.num_quantizers):
-            temp_data_path = os.path.join(
-                self.data_dir, prefix,"data_bin_at_{}".format(i),'train'
-            )
-            # 先检查文件是否存在
-            assert indexed_dataset.dataset_exists(temp_data_path, impl=None), f"Missing indexed dataset files for: {temp_data_path} (expect train.bin/train.idx)"
-            ds_i = data_utils.load_indexed_dataset(temp_data_path, self.at_dict, None)
+            single_dir = os.path.join(self.data_dir, prefix, f"data_bin_at_{i}")
+            single_train = os.path.join(single_dir, 'train')
+
+            ds_i = None
+            paths_i = None
+
+            if indexed_dataset.dataset_exists(single_train, impl=None):
+                # 单分片
+                ds_i = data_utils.load_indexed_dataset(single_train, self.at_dict, None)
+                paths_i = [single_train]
+            else:
+                # 多分片：匹配 data_bin_at_{i}_* 目录
+                shard_dirs = sorted(
+                    d for d in glob.glob(os.path.join(self.data_dir, prefix, f"data_bin_at_{i}_*"))
+                    if os.path.isdir(d)
+                )
+                shard_trains = [os.path.join(d, 'train') for d in shard_dirs]
+                # 过滤出存在 train.bin/train.idx 的分片
+                shard_trains = [p for p in shard_trains if indexed_dataset.dataset_exists(p, impl=None)]
+                if len(shard_trains) == 0:
+                    raise AssertionError(
+                        f"Missing indexed dataset files for AT quantizer {i}. "
+                        f"Checked: {single_train} and shards pattern data_bin_at_{i}_*/train"
+                    )
+                shard_datasets = [data_utils.load_indexed_dataset(p, self.at_dict, None) for p in shard_trains]
+                # 使用 ConcatDataset 将多个分片拼接为一个逻辑数据集
+                ds_i = ConcatDataset(shard_datasets)
+                paths_i = shard_trains
+
             at_dataset.append(ds_i)
-            at_paths.append(temp_data_path)
+            at_paths.append(paths_i)
 
         temp_data_path = os.path.join(
             self.data_dir, prefix,"data_bin_st",'train'
@@ -194,7 +219,8 @@ class AudioDataset(torch.utils.data.Dataset):
         assert base_len == len(dur_dataset), "st_dataset and dur_dataset have different lengths"
         for i, ds_i in enumerate(at_dataset):
             assert len(ds_i) == base_len, (
-                f"AT quantizer {i} length mismatch: len={len(ds_i)} != {base_len}. Path: {at_paths[i]}"
+                f"AT quantizer {i} length mismatch: len={len(ds_i)} != {base_len}. "
+                f"Paths: {at_paths[i]}"
             )
 
         # 读取健壮性检查：尝试访问首尾，尽早暴露 .idx/.bin 不匹配问题
@@ -205,7 +231,7 @@ class AudioDataset(torch.utils.data.Dataset):
                 except Exception as e:
                     raise RuntimeError(
                         f"Failed to read AT dataset (quantizer {i}) at index {probe_idx}. "
-                        f"Path: {at_paths[i]}. This usually indicates train.idx and train.bin are inconsistent/corrupted. "
+                        f"Paths: {at_paths[i]}. This usually indicates train.idx and train.bin are inconsistent/corrupted. "
                         f"Please re-build this shard. Original error: {repr(e)}"
                     )
 
@@ -248,7 +274,7 @@ class AudioDataset(torch.utils.data.Dataset):
             except Exception as e:
                 path_hint = at_paths[i] if at_paths and i < len(at_paths) else "<unknown>"
                 raise RuntimeError(
-                    f"Failed to fetch item idx={idx} from AT quantizer {i}. Path: {path_hint}. "
+                    f"Failed to fetch item idx={idx} from AT quantizer {i}. Paths: {path_hint}. "
                     f"len(ds)={len(ds)}. This likely means the indexed dataset files are broken (offset > bin size). "
                     f"Please re-build this shard. Original error: {repr(e)}"
                 )
