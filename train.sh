@@ -1,5 +1,5 @@
-python trainer.py --train-stage 1 \
-     S --save-every-n 10000 --valid-interval 20000 \
+python train.py --train-stage 1 \
+      --save-every-n 10000 --valid-interval 20000 \
       --model-name vallex \
       --base-lr 0.05 --warmup-steps 200 --average-period 0 \
       --train_dir /scratch/users/astar/ares/ma_yi/output/vallex/ \
