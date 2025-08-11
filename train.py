@@ -87,7 +87,7 @@ def get_parser():
     parser.add_argument(
         "--tensorboard",
         type=str2bool,
-        default=True,
+        default=False,
         help="Should various information be logged in tensorboard.",
     )
 
@@ -735,8 +735,7 @@ def train_one_epoch(
                 )
                 remove_checkpoints(
                     out_dir=params.exp_dir,
-                    topk=params.keep_last_k,
-                    rank=rank,
+                    topk=params.keep_last_k
                 )
          
         if batch_idx % 100 == 0 and params.dtype in ["float16", "fp16"]:
@@ -763,7 +762,7 @@ def train_one_epoch(
                 if params.dtype in ["float16", "fp16"]
                 else 1.0
             )
-
+            '''
             logging.info(
                 f"Epoch {params.cur_epoch}, "
                 f"batch {batch_idx}, train_loss[{loss_info}], "
@@ -776,19 +775,25 @@ def train_one_epoch(
                     else ""
                 )
             )
-            
+            '''
+            print(loss_info["loss"])
+            print(tot_loss["loss"])
+            print('=========')
             # 记录训练指标到 Wandb
             wandb_metrics = {
-                "epoch": params.cur_epoch,
-                "batch": batch_idx,
+
                 #"train/loss": loss_info["loss"] / loss_info["frames"],
+                "train/loss": loss_info["loss"],
                 "train/tot_loss": tot_loss["loss"]
             }
             
             for metric in tot_loss:
                 if 'Accuracy' in metric:
                     wandb_metrics[f"train/tot_{metric}"] = tot_loss[metric]
-            
+                    print(tot_loss[metric])
+            for metric in loss_info:
+                if 'Accuracy' in metric:
+                    wandb_metrics[f"train/loss_{metric}"] = loss_info[metric]            
             wandb.log(wandb_metrics)
 
             if tb_writer is not None:
