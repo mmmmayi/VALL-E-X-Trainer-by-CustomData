@@ -776,24 +776,22 @@ def train_one_epoch(
                 )
             )
             '''
-            print(loss_info["loss"])
-            print(tot_loss["loss"])
-            print('=========')
+
             # 记录训练指标到 Wandb
             wandb_metrics = {
 
-                #"train/loss": loss_info["loss"] / loss_info["frames"],
-                "train/loss": loss_info["loss"],
-                "train/tot_loss": tot_loss["loss"]
+                "train/loss": loss_info["loss"]/ loss_info["frames"],
+                "train/tot_loss": tot_loss["loss"]/ loss_info["frames"]
             }
             
             for metric in tot_loss:
                 if 'Accuracy' in metric:
-                    wandb_metrics[f"train/tot_{metric}"] = tot_loss[metric]
-                    print(tot_loss[metric])
+                    wandb_metrics[f"train/tot_{metric}"] = tot_loss[metric] / tot_loss["frames"]
+        
+       
             for metric in loss_info:
                 if 'Accuracy' in metric:
-                    wandb_metrics[f"train/loss_{metric}"] = loss_info[metric]            
+                    wandb_metrics[f"train/loss_{metric}"] = loss_info[metric] / loss_info["frames"]            
             wandb.log(wandb_metrics)
 
             if tb_writer is not None:
@@ -822,33 +820,25 @@ def train_one_epoch(
             # Calculate validation loss in Rank 0
             model.eval()
             logging.info("Computing validation loss")
-            with torch.cuda.amp.autocast(dtype=dtype):
-                valid_info = compute_validation_loss(
+     
+            valid_info = compute_validation_loss(
                     params=params,
                     model=model,
                     valid_dl=valid_dl,
                     world_size=world_size,
                 )
-            logging.info(
-                f"Epoch {params.cur_epoch}, validation: {valid_info}"
-            )
-            logging.info(
-                f"Maximum memory allocated so far is {torch.cuda.max_memory_allocated()//1000000}MB"
-            )
+            #logging.info(f"Epoch {params.cur_epoch}, validation: {valid_info}")
+            #logging.info(f"Maximum memory allocated so far is {torch.cuda.max_memory_allocated()//1000000}MB")
 
             # 记录验证指标到 Wandb
             valid_wandb_metrics = {
-                "epoch": params.cur_epoch,
-                "global_step": params.batch_idx_train,
                 "valid/loss": valid_info["loss"] / valid_info["frames"],
-                "valid/frames": valid_info["frames"],
-                "valid/utterances": valid_info["utterances"],
-                "memory/max_allocated_mb": torch.cuda.max_memory_allocated()//1000000,
+   
             }
             
             # 添加其他验证指标
             for metric in valid_info:
-                if metric not in ["loss", "frames", "utterances"]:
+                if 'Accuracy' in metric:
                     valid_wandb_metrics[f"valid/{metric}"] = valid_info[metric]
             
             wandb.log(valid_wandb_metrics)
