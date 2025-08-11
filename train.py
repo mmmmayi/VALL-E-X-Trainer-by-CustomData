@@ -70,13 +70,14 @@ def get_parser():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     '''
+
     parser.add_argument(
         "--world-size",
         type=int,
         default=1,
         help="Number of GPUs for DDP training.",
     )
-    '''
+   '''
 
     parser.add_argument(
         "--master-port",
@@ -795,6 +796,7 @@ def train_one_epoch(
                         wandb_metrics[f"train/loss_{metric}"] = loss_info[metric] / loss_info["frames"]            
                 wandb.log(wandb_metrics)
 
+
             if tb_writer is not None:
                 tb_writer.add_scalar(
                     "train/learning_rate", cur_lr, params.batch_idx_train
@@ -831,6 +833,7 @@ def train_one_epoch(
             #logging.info(f"Epoch {params.cur_epoch}, validation: {valid_info}")
             #logging.info(f"Maximum memory allocated so far is {torch.cuda.max_memory_allocated()//1000000}MB")
 
+
             # 记录验证指标到 Wandb (只在主进程)
             if rank == 0:
                 valid_wandb_metrics = {
@@ -844,6 +847,7 @@ def train_one_epoch(
                         valid_wandb_metrics[f"valid/{metric}"] = valid_info[metric] / valid_info["frames"]
                 
                 wandb.log(valid_wandb_metrics)
+
 
             if tb_writer is not None:
                 valid_info.write_summary(
@@ -876,6 +880,7 @@ def run(rank, world_size, args):
     fix_random_seed(params.seed)
     rng = random.Random(params.seed)
     if world_size > 1:
+
         # 检查是否已经通过 torchrun 初始化了分布式环境
         if "RANK" in os.environ and "WORLD_SIZE" in os.environ:
             # torchrun 已经设置了环境变量，使用 DDP launch 模式
@@ -884,9 +889,11 @@ def run(rank, world_size, args):
             # 使用 mp.spawn 模式
             setup_dist(rank, world_size, params.master_port, use_ddp_launch=False)
 
+
     setup_logger(f"{params.exp_dir}/log/log-train")
     logging.info("Training started")
     
+
     # 只在主进程(rank 0)初始化 Wandb
     if rank == 0:
         wandb.init(entity='i2r-llm', project="mayi_generation",name="vallex-training-stage-1" ,config=params,resume='allow')
@@ -1093,6 +1100,7 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
     args.exp_dir = Path(args.exp_dir)
+
 
     # 检查是否使用 torchrun 启动
     if "RANK" in os.environ and "WORLD_SIZE" in os.environ:
