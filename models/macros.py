@@ -1,8 +1,8 @@
 # Text
-NUM_TEXT_TOKENS = 2048
+NUM_TEXT_TOKENS = 32004
 
 # Audio
-NUM_AUDIO_TOKENS = 1024  # EnCodec RVQ bins
+NUM_AUDIO_TOKENS = 1028  # EnCodec RVQ bins
 NUM_MEL_BINS = 100  # BigVGAN bigvgan_24khz_100band
 
 
