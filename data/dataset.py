@@ -139,7 +139,7 @@ class DynamicBatchSampler(torch.utils.data.Sampler):
 
 
 class AudioDataset(torch.utils.data.Dataset):
-    def __init__(self, data_dir, lang=['zh','en'],num_quantizers=8):
+    def __init__(self, data_dir, mode,lang=['zh','en'],num_quantizers=8):
         super().__init__()
         self.data_dir = data_dir
         self.num_quantizers = num_quantizers
@@ -156,12 +156,12 @@ class AudioDataset(torch.utils.data.Dataset):
         self.zh_at_paths = None
         self.en_at_paths = None
         if 'zh' in lang:
-            self.zh_at_dataset, self.zh_st_dataset, self.zh_dur, self.zh_datanum, self.zh_at_paths = self.load_data("data_wenet")
+            self.zh_at_dataset, self.zh_st_dataset, self.zh_dur, self.zh_datanum, self.zh_at_paths = self.load_data("data_wenet/"+mode)
             self.len=self.zh_datanum
             self.lang_id_dict["zh"] = 0
             self.lang = "zh"
         if 'en' in lang:
-            self.en_at_dataset, self.en_st_dataset, self.en_dur, self.en_datanum, self.en_at_paths = self.load_data("data_libri_12s")
+            self.en_at_dataset, self.en_st_dataset, self.en_dur, self.en_datanum, self.en_at_paths = self.load_data("data_libri_12s/"+mode)
             self.len = max(self.len,self.en_datanum)
             self.lang_id_dict["en"] = 1
             self.lang = "en"
@@ -340,8 +340,8 @@ def collate(batch):
     }
     return batch
 
-def create_dataloader(data_dir, lang, n_gpus=1, rank=0, num_workers=0, num_buckets=10, max_duration=120):
-    train_dataset = AudioDataset(data_dir=data_dir,lang=lang)
+def create_dataloader(data_dir, lang, mode, n_gpus=1, rank=0, num_workers=0, num_buckets=10, max_duration=120):
+    train_dataset = AudioDataset(data_dir=data_dir,lang=lang, mode=mode)
     ran_sampler = torch.utils.data.distributed.DistributedSampler(
             train_dataset,
             num_replicas=n_gpus,
