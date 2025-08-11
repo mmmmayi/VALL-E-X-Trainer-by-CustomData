@@ -38,7 +38,7 @@ import warnings
 from pathlib import Path
 from shutil import copyfile
 from typing import Any, Dict, Optional, Tuple, Union
-
+import wandb
 import torch
 import torch.multiprocessing as mp
 import torch.nn as nn
@@ -543,7 +543,8 @@ def compute_loss(
     # Note: We use reduction=sum while computing the loss.
     info["loss"] = loss.detach().cpu().item()
     for metric in metrics:
-        info[metric] = metrics[metric].detach().cpu().item()
+        if 'Accuracy' in metric:
+            info[metric] = metrics[metric].detach().cpu().item()
     del metrics
 
     return predicts, loss, info
@@ -775,6 +776,20 @@ def train_one_epoch(
                     else ""
                 )
             )
+            
+            # 记录训练指标到 Wandb
+            wandb_metrics = {
+                "epoch": params.cur_epoch,
+                "batch": batch_idx,
+                #"train/loss": loss_info["loss"] / loss_info["frames"],
+                "train/tot_loss": tot_loss["loss"]
+            }
+            
+            for metric in tot_loss:
+                if 'Accuracy' in metric:
+                    wandb_metrics[f"train/tot_{metric}"] = tot_loss[metric]
+            
+            wandb.log(wandb_metrics)
 
             if tb_writer is not None:
                 tb_writer.add_scalar(
@@ -816,6 +831,23 @@ def train_one_epoch(
                 f"Maximum memory allocated so far is {torch.cuda.max_memory_allocated()//1000000}MB"
             )
 
+            # 记录验证指标到 Wandb
+            valid_wandb_metrics = {
+                "epoch": params.cur_epoch,
+                "global_step": params.batch_idx_train,
+                "valid/loss": valid_info["loss"] / valid_info["frames"],
+                "valid/frames": valid_info["frames"],
+                "valid/utterances": valid_info["utterances"],
+                "memory/max_allocated_mb": torch.cuda.max_memory_allocated()//1000000,
+            }
+            
+            # 添加其他验证指标
+            for metric in valid_info:
+                if metric not in ["loss", "frames", "utterances"]:
+                    valid_wandb_metrics[f"valid/{metric}"] = valid_info[metric]
+            
+            wandb.log(valid_wandb_metrics)
+
             if tb_writer is not None:
                 valid_info.write_summary(
                     tb_writer, "train/valid_", params.batch_idx_train
@@ -851,6 +883,8 @@ def run(rank, world_size, args):
 
     setup_logger(f"{params.exp_dir}/log/log-train")
     logging.info("Training started")
+    
+    wandb.init(entity='i2r-llm', project="mayi_generation",name="vallex-training-stage-1" ,config=params,resume='allow')
 
     if args.tensorboard and rank == 0:
         if params.train_stage:
@@ -1061,7 +1095,7 @@ def main():
         mp.spawn(run, args=(world_size, args), nprocs=world_size, join=True)
     else:
         run(rank=0, world_size=1, args=args)
-
+    wandb.finish()
 
 torch.set_num_threads(1)
 torch.set_num_interop_threads(1)

@@ -244,7 +244,7 @@ def save_checkpoint_impl(
         "optimizer": optimizer.state_dict() if optimizer is not None else None,
         "scheduler": scheduler.state_dict() if scheduler is not None else None,
         "grad_scaler": scaler.state_dict() if scaler is not None else None,
-        "sampler": sampler.state_dict() if sampler is not None else None,
+        "sampler": sampler if sampler is not None else None,
     }
 
     if model_avg is not None:
