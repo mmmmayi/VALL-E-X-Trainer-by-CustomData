@@ -409,7 +409,6 @@ class VALLF(nn.Module):
         """
         assert x.ndim == 2, x.shape
         assert x_lens.ndim == 1, x_lens.shape
-
         y_prompts_codes = None
         if isinstance(y, PromptedFeatures):
             y_prompts_codes, y = y.data
@@ -824,12 +823,10 @@ class VALLE(VALLF):
         # AR Decoder
         if train_stage in [0, 1]:
             x = self.ar_text_embedding(text)
-            x += self.ar_language_embedding(langid)
+            x += self.ar_language_embedding(langid).unsqueeze(1)
             x = self.ar_text_prenet(x)
             x = self.ar_text_position(x)
-
             y_len = y_lens.max() + int(self.ar_audio_prepend_bos)
-
             x_attn_mask = F.pad(
                 torch.zeros((x_len, x_len), dtype=torch.bool, device=x.device),
                 (0, y_len),
@@ -893,7 +890,7 @@ class VALLE(VALLF):
             )[0]
 
             x = self.nar_text_embedding(text)
-            x += self.nar_language_embedding(langid)
+            x += self.nar_language_embedding(langid).unsqueeze(1)
             x = self.nar_text_prenet(x)
             x = self.nar_text_position(x)
 
