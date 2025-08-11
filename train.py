@@ -655,7 +655,7 @@ def train_one_epoch(
         batch_idx += 1
 
         params.batch_idx_train += 1
-        batch_size = len(batch["text"])
+        batch_size = len(batch["languages"])
 
         try:
             with torch.cuda.amp.autocast(dtype=dtype, enabled=enabled):
