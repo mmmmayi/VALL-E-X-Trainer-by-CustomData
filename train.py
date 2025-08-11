@@ -69,13 +69,14 @@ def get_parser():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-
+    '''
     parser.add_argument(
         "--world-size",
         type=int,
         default=1,
         help="Number of GPUs for DDP training.",
     )
+    '''
 
     parser.add_argument(
         "--master-port",
@@ -777,22 +778,22 @@ def train_one_epoch(
             )
             '''
 
-            # 记录训练指标到 Wandb
-            wandb_metrics = {
-
-                "train/loss": loss_info["loss"]/ loss_info["frames"],
-                "train/tot_loss": tot_loss["loss"]/ loss_info["frames"]
-            }
+            # 记录训练指标到 Wandb (只在主进程)
+            if rank == 0:
+                wandb_metrics = {
+                    "train/loss": loss_info["loss"]/ loss_info["frames"],
+                    "train/tot_loss": tot_loss["loss"]/ loss_info["frames"]
+                }
+                
+                for metric in tot_loss:
+                    if 'Accuracy' in metric:
+                        wandb_metrics[f"train/tot_{metric}"] = tot_loss[metric] / tot_loss["frames"]
             
-            for metric in tot_loss:
-                if 'Accuracy' in metric:
-                    wandb_metrics[f"train/tot_{metric}"] = tot_loss[metric] / tot_loss["frames"]
-        
-       
-            for metric in loss_info:
-                if 'Accuracy' in metric:
-                    wandb_metrics[f"train/loss_{metric}"] = loss_info[metric] / loss_info["frames"]            
-            wandb.log(wandb_metrics)
+           
+                for metric in loss_info:
+                    if 'Accuracy' in metric:
+                        wandb_metrics[f"train/loss_{metric}"] = loss_info[metric] / loss_info["frames"]            
+                wandb.log(wandb_metrics)
 
             if tb_writer is not None:
                 tb_writer.add_scalar(
@@ -830,18 +831,19 @@ def train_one_epoch(
             #logging.info(f"Epoch {params.cur_epoch}, validation: {valid_info}")
             #logging.info(f"Maximum memory allocated so far is {torch.cuda.max_memory_allocated()//1000000}MB")
 
-            # 记录验证指标到 Wandb
-            valid_wandb_metrics = {
-                "valid/loss": valid_info["loss"] / valid_info["frames"],
-   
-            }
-            
-            # 添加其他验证指标
-            for metric in valid_info:
-                if 'Accuracy' in metric:
-                    valid_wandb_metrics[f"valid/{metric}"] = valid_info[metric]
-            
-            wandb.log(valid_wandb_metrics)
+            # 记录验证指标到 Wandb (只在主进程)
+            if rank == 0:
+                valid_wandb_metrics = {
+                    "valid/loss": valid_info["loss"] / valid_info["frames"],
+       
+                }
+                
+                # 添加其他验证指标
+                for metric in valid_info:
+                    if 'Accuracy' in metric:
+                        valid_wandb_metrics[f"valid/{metric}"] = valid_info[metric] / valid_info["frames"]
+                
+                wandb.log(valid_wandb_metrics)
 
             if tb_writer is not None:
                 valid_info.write_summary(
@@ -874,12 +876,20 @@ def run(rank, world_size, args):
     fix_random_seed(params.seed)
     rng = random.Random(params.seed)
     if world_size > 1:
-        setup_dist(rank, world_size, params.master_port)
+        # 检查是否已经通过 torchrun 初始化了分布式环境
+        if "RANK" in os.environ and "WORLD_SIZE" in os.environ:
+            # torchrun 已经设置了环境变量，使用 DDP launch 模式
+            setup_dist(rank, world_size, params.master_port, use_ddp_launch=True)
+        else:
+            # 使用 mp.spawn 模式
+            setup_dist(rank, world_size, params.master_port, use_ddp_launch=False)
 
     setup_logger(f"{params.exp_dir}/log/log-train")
     logging.info("Training started")
     
-    wandb.init(entity='i2r-llm', project="mayi_generation",name="vallex-training-stage-1" ,config=params,resume='allow')
+    # 只在主进程(rank 0)初始化 Wandb
+    if rank == 0:
+        wandb.init(entity='i2r-llm', project="mayi_generation",name="vallex-training-stage-1" ,config=params,resume='allow')
 
     if args.tensorboard and rank == 0:
         if params.train_stage:
@@ -1084,13 +1094,34 @@ def main():
     args = parser.parse_args()
     args.exp_dir = Path(args.exp_dir)
 
-    world_size = args.world_size
-    assert world_size >= 1
-    if world_size > 1:
-        mp.spawn(run, args=(world_size, args), nprocs=world_size, join=True)
+    # 检查是否使用 torchrun 启动
+    if "RANK" in os.environ and "WORLD_SIZE" in os.environ:
+        # 使用 torchrun 启动的情况
+        rank = int(os.environ["RANK"])
+        world_size = int(os.environ["WORLD_SIZE"])
+        local_rank = int(os.environ["LOCAL_RANK"])
+        
+        # 覆盖命令行参数
+        args.world_size = world_size
+        
+        print(f"Torchrun detected: rank={rank}, world_size={world_size}, local_rank={local_rank}")
+        run(rank=rank, world_size=world_size, args=args)
+        
+        # 只在主进程完成后 finish wandb
+        if rank == 0:
+            wandb.finish()
     else:
-        run(rank=0, world_size=1, args=args)
-    wandb.finish()
+        # 使用 mp.spawn 启动的情况
+        world_size = args.world_size
+        assert world_size >= 1
+        if world_size > 1:
+            mp.spawn(run, args=(world_size, args), nprocs=world_size, join=True)
+        else:
+            run(rank=0, world_size=1, args=args)
+        
+        # 只在单卡训练时或者完成分布式训练后才finish wandb
+        if args.world_size == 1:
+            wandb.finish()
 
 torch.set_num_threads(1)
 torch.set_num_interop_threads(1)
