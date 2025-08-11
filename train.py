@@ -978,8 +978,8 @@ def run(rank, world_size, args):
     else:
         sampler_state_dict = None
 
-    train_dl = create_dataset(params.train_dir, params.lang)
-    valid_dl = create_dataset(params.valid_dir, params.lang)
+    train_dl = create_dataset(params.train_dir, params.lang,'train')
+    valid_dl = create_dataset(params.valid_dir, params.lang,'dev')
 
     scaler = GradScaler(
         enabled=(params.dtype in ["fp16", "float16"]), init_scale=1.0
