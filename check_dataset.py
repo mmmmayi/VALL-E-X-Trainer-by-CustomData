@@ -16,8 +16,10 @@ audio_min, audio_max = float("inf"), float("-inf")
 per_q_max = None
 per_q_min = None
 
+ 
 num_batches = 0
 num_items = 0
+ 
 
 pbar = tqdm(total=total_items, unit="item", desc="Scanning dataset", smoothing=0.1)
 with torch.no_grad():
@@ -57,9 +59,11 @@ with torch.no_grad():
                 per_q_min[q] = min(per_q_min[q], int(v[:, q].min().item()))
                 per_q_max[q] = max(per_q_max[q], int(v[:, q].max().item()))
 
+ 
         # 更新进度条
         pbar.update(B)
-
+        quit()
+ 
 pbar.close()
 print(f"Scanned batches={num_batches}, items={num_items}")
 print(f"text_tokens: min={text_min}, max={text_max}, limit(NUM_TEXT_TOKENS)={NUM_TEXT_TOKENS}")
@@ -72,4 +76,6 @@ if per_q_max is not None:
 if text_max >= NUM_TEXT_TOKENS or text_min < 0:
     print("[WARN] text token 越界：请将 models/macros.py 的 NUM_TEXT_TOKENS 调整为 >= 实际词表大小，或修正数据。")
 if audio_max >= NUM_AUDIO_TOKENS or audio_min < 0:
+
     print("[WARN] audio token 越界：请将 NUM_AUDIO_TOKENS 与你的 codec 码本一致，或修正数据。")
+

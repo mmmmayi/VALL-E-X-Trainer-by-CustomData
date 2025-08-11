@@ -143,12 +143,11 @@ class AudioDataset(torch.utils.data.Dataset):
         super().__init__()
         self.data_dir = data_dir
         self.num_quantizers = num_quantizers
-        self.at_dict = Dictionary.load(os.path.join(self.data_dir, "checkpoint/slam_vallex/pretrained_model", "dict.at.txt"))
+        self.at_dict = Dictionary.load(os.path.join(self.data_dir, "checkpoint/slam_vallex/pretrained_model/", "dict.at.txt"))
         self.st_dict = Dictionary.load(os.path.join(self.data_dir, "checkpoint/slam_vallex/pretrained_model","dict.st.txt"))
-       
-        self.at_dict.tts_flag = self.at_dict.add_symbol("<TTS>")
-        self.st_dict.asr_flag = self.st_dict.add_symbol("<ASR>")
-        self.at_dict.mt_flag = self.st_dict.add_symbol("<MT>")
+        #self.at_dict.tts_flag = self.at_dict.add_symbol("<TTS>")
+        #self.st_dict.asr_flag = self.st_dict.add_symbol("<ASR>")
+        #self.at_dict.mt_flag = self.st_dict.add_symbol("<MT>")
         assert len(lang)>0, "lang must be in ['zh','en']"
         self.len=0
         self.lang_id_dict = {}
@@ -313,6 +312,7 @@ class AudioDataset(torch.utils.data.Dataset):
 def collate(batch):
 
     audio_features_lens_s = [b['audio_features_lens'] for b in batch]
+    
     # create an empty tensor with maximum audio feature length
     audio_features_s = torch.zeros([len(batch), max(audio_features_lens_s), 8], dtype=torch.int64) - 1 # audio pad with -1
 
