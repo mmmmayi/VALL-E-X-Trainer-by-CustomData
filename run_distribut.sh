@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -N extract_codec
+#PBS -N train
 #PBS -l select=1:ncpus=112:ngpus=8:mem=1024gb:container_engine=enroot
 #PBS -l walltime=24:00:00
 #PBS -q normal
@@ -9,7 +9,7 @@
 #PBS -l container_name=tts
 #PBS -l enroot_env_file=/scratch/users/astar/ares/suns1/workspace/multimodal_trainer/scripts/a2ap_scripts/enroot_scripts/env.conf
 
-ROOT_DIR=/home/users/astar/ares/ma_yi/
+ROOT_DIR=/home/users/astar/ares/ma_yi
 SCRATCH_DIR=/scratch/users/astar/ares/ma_yi
 HF_HOME=/scratch/users/astar/ares/ma_yi/hf_home
 CODE_DIR=${ROOT_DIR}/code/VALL-E-X-Trainer-by-CustomData
@@ -37,7 +37,6 @@ MASTER_NODE=$(head -n 1 $PBS_NODEFILE)
 NNODES=$(cat $PBS_NODEFILE | wc -l)
 
 pbsdsh bash $CODE_DIR/enroot_start.sh \
-
     $HF_HOME \
     $ROOT_DIR \
     $CODE_DIR \
