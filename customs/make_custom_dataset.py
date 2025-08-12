@@ -95,9 +95,9 @@ def find_audio_files(data_dirs, supported_formats=['.wav', '.flac']):
     
     return audio_paths
 
-def create_dataset(data_dir, lang, mode):
+def create_dataset(data_dir, lang, mode, n_gpus=1, rank=0):
 
 
-    dataloader = create_dataloader(data_dir=data_dir,lang=lang, mode=mode)
+    dataloader = create_dataloader(data_dir=data_dir, lang=lang, mode=mode, n_gpus=n_gpus, rank=rank)
     return dataloader
 

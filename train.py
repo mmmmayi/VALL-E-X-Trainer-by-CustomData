@@ -820,25 +820,23 @@ def train_one_epoch(
                     )
 
         if params.batch_idx_train % params.valid_interval == 0:
-            # Calculate validation loss in Rank 0
             model.eval()
-            logging.info("Computing validation loss")
-     
-            valid_info = compute_validation_loss(
+            
+            # 只在 rank 0 上计算验证损失
+            if rank == 0:
+                logging.info("Computing validation loss")
+                valid_info = compute_validation_loss(
                     params=params,
                     model=model,
                     valid_dl=valid_dl,
-                    world_size=world_size,
+                    world_size=1,  # 在单卡上计算，所以设为1
                 )
-            #logging.info(f"Epoch {params.cur_epoch}, validation: {valid_info}")
-            #logging.info(f"Maximum memory allocated so far is {torch.cuda.max_memory_allocated()//1000000}MB")
+                #logging.info(f"Epoch {params.cur_epoch}, validation: {valid_info}")
+                #logging.info(f"Maximum memory allocated so far is {torch.cuda.max_memory_allocated()//1000000}MB")
 
-
-            # 记录验证指标到 Wandb (只在主进程)
-            if rank == 0:
+                # 记录验证指标到 Wandb (只在主进程)
                 valid_wandb_metrics = {
                     "valid/loss": valid_info["loss"] / valid_info["frames"],
-       
                 }
                 
                 # 添加其他验证指标
@@ -848,11 +846,14 @@ def train_one_epoch(
                 
                 wandb.log(valid_wandb_metrics)
 
-
-            if tb_writer is not None:
-                valid_info.write_summary(
-                    tb_writer, "train/valid_", params.batch_idx_train
-                )
+                if tb_writer is not None:
+                    valid_info.write_summary(
+                        tb_writer, "train/valid_", params.batch_idx_train
+                    )
+            
+            # 在多卡情况下，同步所有进程
+            if world_size > 1:
+                torch.distributed.barrier()
 
             model.train()
 
@@ -1023,8 +1024,12 @@ def run(rank, world_size, args):
     else:
         sampler_state_dict = None
 
-    train_dl = create_dataset(params.train_dir, params.lang,'train')
-    valid_dl = create_dataset(params.valid_dir, params.lang,'dev')
+    # 训练数据集使用分布式设置
+    train_dl = create_dataset(params.train_dir, params.lang, 'train', n_gpus=world_size, rank=rank)
+    
+    # 验证数据集在所有rank上都创建，但使用非分布式设置，这样数据是一致的
+    # 虽然所有rank都有valid_dl，但只有rank 0会实际使用它进行验证
+    valid_dl = create_dataset(params.valid_dir, params.lang, 'dev', n_gpus=1, rank=0)
 
     scaler = GradScaler(
         enabled=(params.dtype in ["fp16", "float16"]), init_scale=1.0
