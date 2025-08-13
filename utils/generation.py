@@ -31,7 +31,7 @@ from utils.sentence_cutter import split_text_into_sentences
 
 from macros import *
 import torchaudio
-
+from fairseq.data import Dictionary
 device = torch.device("cpu")
 if torch.cuda.is_available():
     device = torch.device("cuda", 0)
@@ -55,7 +55,7 @@ def get_codec(model, audio_path, device = torch.device("cuda", 0)):
     with torch.no_grad():
         audio, sr = torchaudio.load(audio_path)
         en_audio = audio.unsqueeze(0)
-        en_audio = convert_audio(en_audio, sr, SAMPLE_RATE, model.channels)
+        en_audio = convert_audio(en_audio, sr, model.sample_rate, model.channels)
         encoded_frames = model.encode(en_audio.to(device))
         # dim, nframe
         codes = torch.cat([encoded[0] for encoded in encoded_frames], dim=-1).squeeze(0).detach().cpu().numpy()
@@ -70,9 +70,10 @@ def norm(txt):
 def sentence2token(sentence, sp):
     return " ".join(np.array(sp.encode_as_ids(sentence), dtype=str))
 
-def preload_models(checkpoint):
+def preload_models():
     global model, codec, vocos
-    if not os.path.exists(checkpoint):
+    if not os.path.exists(checkpoints_dir): os.mkdir(checkpoints_dir)
+    if not os.path.exists(os.path.join(checkpoints_dir, model_checkpoint_name)):
         print('model not found')
         return
     # VALL-E
@@ -88,7 +89,7 @@ def preload_models(checkpoint):
         prepend_bos=True,
         num_quantizers=NUM_QUANTIZERS,
     ).to(device)
-    checkpoint = torch.load(checkpoint, map_location='cpu', weights_only=False)
+    checkpoint = torch.load(os.path.join(checkpoints_dir, model_checkpoint_name), map_location='cpu')
     missing_keys, unexpected_keys = model.load_state_dict(
         checkpoint["model"], strict=True
     )
@@ -97,13 +98,14 @@ def preload_models(checkpoint):
     codec = EncodecModel.encodec_model_24khz().to(device)
     codec.set_target_bandwidth(6.0)
     vocos = Vocos.from_pretrained('charactr/vocos-encodec-24khz').to(device)
+
 @torch.no_grad()
 def generate_audio(text, model_home,text_prompt=None, audio_prompt=None, prompt_lang='auto', target_lang='no-accent'):
     global model, codec, vocos, text_tokenizer, text_collater
     text = text.replace("\n", "").strip(" ")
     # detect language
-    #if language == "auto":
-        #language = langid.classify(text)[0]
+    if language == "auto":
+        language = langid.classify(text)[0]
     #lang_token = lang2token[language]
     #lang = token2lang[lang_token]
    # text = lang_token + text + lang_token
@@ -112,66 +114,40 @@ def generate_audio(text, model_home,text_prompt=None, audio_prompt=None, prompt_
     if text_prompt is not None and audio_prompt is not None:
         sp = spm.SentencePieceProcessor()
         sp.load(os.path.join(model_home, "checkpoint/slam_vallex/pretrained_model/bpe.model"))
-        ar_at_dict = os.path.join(model_home, "checkpoint/slam_vallex/pretrained_model/dict.at.txt")
-        ar_st_dict = os.path.join(model_home, "checkpoint/slam_vallex/pretrained_model/dict.st.txt")
-        nar_at_dict = os.path.join(model_home,"checkpoint/slam_vallex/pretrained_model/dict.at.txt")
-        nar_st_dict = os.path.join(model_home, "checkpoint/slam_vallex/pretrained_model/dict.st.txt")
+        ar_at_dict = Dictionary.load( os.path.join(model_home, "checkpoint/slam_vallex/pretrained_model/dict.at.txt"))
+        ar_st_dict = Dictionary.load(os.path.join(model_home, "checkpoint/slam_vallex/pretrained_model/dict.st.txt"))
+        nar_at_dict = Dictionary.load(os.path.join(model_home,"checkpoint/slam_vallex/pretrained_model/dict.at.txt"))
+        nar_st_dict = Dictionary.load(os.path.join(model_home, "checkpoint/slam_vallex/pretrained_model/dict.st.txt"))
         ref_codec = get_codec(codec, audio_prompt, device)
+        ref_all_ats = " ".join(np.expand_dims(ref_codec[:, :].T, axis=0).flatten().astype(str))
+        ref_at_tokens = nar_at_dict.encode_line(ref_all_ats, append_eos=False).long().reshape([-1, 8]).unsqueeze(0)
         ref_st_tokens = sentence2token(norm(text_prompt), sp)
         tgt_st_token = sentence2token(norm(text), sp)
-        print(ref_codec)
-        print(ref_st_tokens)
-        quit()
-        #ref_codec = " ".join(np.expand_dims(ref_codec[:, :].T, axis=0).flatten().astype(str))
-        #ref_at_tokens = nar_at_dict.encode_line(ref_codec, append_eos=False).type(torch.int32)
+        ref_st_tokens = ar_st_dict.encode_line(ref_st_tokens, append_eos=False).long()
+        tgt_st_token = ar_st_dict.encode_line(tgt_st_token, append_eos=False).long()
+        lang_pr = lang2code[prompt_lang]
 
-
-
-
-
-
-        prompt_path = prompt
-        if not os.path.exists(prompt_path):
-            prompt_path = "./presets/" + prompt + ".npz"
-        if not os.path.exists(prompt_path):
-            prompt_path = "./customs/" + prompt + ".npz"
-        if not os.path.exists(prompt_path):
-            raise ValueError(f"Cannot find prompt {prompt}")
-        prompt_data = np.load(prompt_path)
-        audio_prompts = prompt_data['audio_tokens']
-        text_prompts = prompt_data['text_tokens']
-        lang_pr = prompt_data['lang_code']
-        lang_pr = code2lang[int(lang_pr)]
-
-        # numpy to tensor
-        audio_prompts = torch.tensor(audio_prompts).type(torch.int32).to(device)
-        text_prompts = torch.tensor(text_prompts).type(torch.int32)
     else:
-        audio_prompts = torch.zeros([1, 0, NUM_QUANTIZERS]).type(torch.int32).to(device)
-        text_prompts = torch.zeros([1, 0]).type(torch.int32)
-        lang_pr = lang if lang != 'mix' else 'en'
+        print("no prompt")
+        quit()
 
-    enroll_x_lens = text_prompts.shape[-1]
-    logging.info(f"synthesize text: {text}")
-    phone_tokens, langs = text_tokenizer.tokenize(text=f"_{text}".strip())
-    text_tokens, text_tokens_lens = text_collater(
-        [
-            phone_tokens
-        ]
-    )
-    text_tokens = torch.cat([text_prompts, text_tokens], dim=-1)
+
+    enroll_x_lens = ref_st_tokens.shape[-1]
+    text_tokens, text_tokens_lens = text_collater([tgt_st_token])
+
+    text_tokens = torch.cat([ref_st_tokens, text_tokens], dim=-1)
     text_tokens_lens += enroll_x_lens
     # accent control
-    lang = lang if accent == "no-accent" else token2lang[langdropdown2token[accent]]
+    lang = lang2code[target_lang]
     encoded_frames = model.inference(
         text_tokens.to(device),
         text_tokens_lens.to(device),
-        audio_prompts,
+        ref_all_ats.to(device),
         enroll_x_lens=enroll_x_lens,
         top_k=-100,
         temperature=1,
         prompt_language=lang_pr,
-        text_language=langs if accent == "no-accent" else lang,
+        text_language=lang,
     )
     # Decode with Vocos
     frames = encoded_frames.permute(2,0,1)
