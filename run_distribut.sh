@@ -1,7 +1,7 @@
 #!/bin/bash
 #PBS -N train
 #PBS -l select=1:ncpus=112:ngpus=8:mem=1024gb:container_engine=enroot
-#PBS -l walltime=24:00:00
+#PBS -l walltime=120:00:00
 #PBS -q normal
 #PBS -P 13003558
 #PBS -j oe
@@ -21,7 +21,10 @@ export TMPDIR=$SCRATCH_DIR/tmp
 mkdir -p /raid/local/containers/enroot-data/${PBS_JOBID}/tts
 
 #change these parameters
-EXP_NAME=stage-1
+EXP_NAME=stage-2
+PRE_NAME=stage-1
+STAGE=2
+START_EPOCH=4
 #if your experiment config yaml is in config/experiment/suns1, then set EXP_PATH to experiment.${username}
 EXP_PATH=/scratch/users/astar/ares/ma_yi/output/vallex/exp/
 
@@ -48,4 +51,7 @@ pbsdsh bash $CODE_DIR/enroot_start.sh \
     $NNODES \
     $EXP_NAME \
     $EXP_PATH \
-    $SCRATCH_DIR
+    $SCRATCH_DIR \
+    $PRE_NAME \
+    $STAGE \
+    $START_EPOCH
