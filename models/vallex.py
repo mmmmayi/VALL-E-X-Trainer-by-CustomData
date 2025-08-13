@@ -1182,6 +1182,7 @@ class VALLE(VALLF):
                     y_emb[:, prefix_len:] += embedding_layer(samples)
 
         assert len(codes) == self.num_quantizers
+        print(self.num_quantizers)
         return torch.stack(codes, dim=-1)
 
     def continual(

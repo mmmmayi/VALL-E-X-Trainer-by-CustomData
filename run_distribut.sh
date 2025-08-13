@@ -21,10 +21,10 @@ export TMPDIR=$SCRATCH_DIR/tmp
 mkdir -p /raid/local/containers/enroot-data/${PBS_JOBID}/tts
 
 #change these parameters
-EXP_NAME=stage-2
+EXP_NAME=stage-2-StartEpoch-5
 PRE_NAME=stage-1
 STAGE=2
-START_EPOCH=4
+START_EPOCH=6
 #if your experiment config yaml is in config/experiment/suns1, then set EXP_PATH to experiment.${username}
 EXP_PATH=/scratch/users/astar/ares/ma_yi/output/vallex/exp/
 

@@ -3,7 +3,7 @@ from scipy.io.wavfile import write as write_wav
 from IPython.display import Audio
 
 # download and load all models
-checkpoint='/scratch/users/astar/ares/ma_yi/output/vallex/exp/stage-2/epoch-1.pt'
+checkpoint='/scratch/users/astar/ares/ma_yi/output/vallex/exp/stage-2/epoch-2.pt'
 preload_models(checkpoint)
 
 # generate audio from text
@@ -16,4 +16,4 @@ model_home = "/scratch/users/astar/ares/ma_yi/output/vallex/"
 audio_array = generate_audio(text, model_home, text_prompt, audio_prompt, target_lang=target_lang, prompt_lang=prompt_lang)
 
 # save audio to disk
-#write_wav("zh2zh.wav", 24000, audio_array)
+write_wav("zh2zh.wav", 24000, audio_array)

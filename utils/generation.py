@@ -70,10 +70,9 @@ def norm(txt):
 def sentence2token(sentence, sp):
     return " ".join(np.array(sp.encode_as_ids(sentence), dtype=str))
 
-def preload_models():
+def preload_models(checkpoint):
     global model, codec, vocos
-    if not os.path.exists(checkpoints_dir): os.mkdir(checkpoints_dir)
-    if not os.path.exists(os.path.join(checkpoints_dir, model_checkpoint_name)):
+    if not os.path.exists(checkpoint):
         print('model not found')
         return
     # VALL-E
@@ -89,7 +88,7 @@ def preload_models():
         prepend_bos=True,
         num_quantizers=NUM_QUANTIZERS,
     ).to(device)
-    checkpoint = torch.load(os.path.join(checkpoints_dir, model_checkpoint_name), map_location='cpu')
+    checkpoint = torch.load(checkpoint, map_location='cpu', weights_only=False)
     missing_keys, unexpected_keys = model.load_state_dict(
         checkpoint["model"], strict=True
     )
@@ -104,8 +103,8 @@ def generate_audio(text, model_home,text_prompt=None, audio_prompt=None, prompt_
     global model, codec, vocos, text_tokenizer, text_collater
     text = text.replace("\n", "").strip(" ")
     # detect language
-    if language == "auto":
-        language = langid.classify(text)[0]
+    #if language == "auto":
+        #language = langid.classify(text)[0]
     #lang_token = lang2token[language]
     #lang = token2lang[lang_token]
    # text = lang_token + text + lang_token
@@ -125,7 +124,6 @@ def generate_audio(text, model_home,text_prompt=None, audio_prompt=None, prompt_
         tgt_st_token = sentence2token(norm(text), sp)
         ref_st_tokens = ar_st_dict.encode_line(ref_st_tokens, append_eos=False).long()
         tgt_st_token = ar_st_dict.encode_line(tgt_st_token, append_eos=False).long()
-        lang_pr = lang2code[prompt_lang]
 
     else:
         print("no prompt")
@@ -134,24 +132,26 @@ def generate_audio(text, model_home,text_prompt=None, audio_prompt=None, prompt_
 
     enroll_x_lens = ref_st_tokens.shape[-1]
     text_tokens, text_tokens_lens = text_collater([tgt_st_token])
-
-    text_tokens = torch.cat([ref_st_tokens, text_tokens], dim=-1)
+    text_tokens = torch.cat([ref_st_tokens.unsqueeze(0), text_tokens], dim=-1)
     text_tokens_lens += enroll_x_lens
-    # accent control
-    lang = lang2code[target_lang]
     encoded_frames = model.inference(
         text_tokens.to(device),
         text_tokens_lens.to(device),
-        ref_all_ats.to(device),
+        ref_at_tokens.to(device),
         enroll_x_lens=enroll_x_lens,
         top_k=-100,
         temperature=1,
-        prompt_language=lang_pr,
-        text_language=lang,
+        prompt_language=prompt_lang,
+        text_language=target_lang,
     )
+    print(encoded_frames.shape)
     # Decode with Vocos
-    frames = encoded_frames.permute(2,0,1)
-    features = vocos.codes_to_features(frames)
+    #frames = encoded_frames.permute(1,0,2)
+    #features = vocos.codes_to_features(encoded_frames)
+    at_8 = encoded_frames.reshape(1, -1).long()
+    at_8 = nar_at_dict.string(at_8[0])
+    codec_item = torch.LongTensor(list(map(int, at_8.strip().split()))).reshape(-1, 8).transpose(0, 1).cuda()
+    features = vocos.codes_to_features(codec_item) 
     samples = vocos.decode(features, bandwidth_id=torch.tensor([2], device=device))
 
     return samples.squeeze().cpu().numpy()
