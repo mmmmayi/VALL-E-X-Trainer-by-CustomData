@@ -275,6 +275,13 @@ def get_parser():
         "--valid_dir",
         default='./customs/test_data'
     )
+    
+    parser.add_argument(
+        "--stage1_dir",
+        type=str,
+        default="",
+        help="Path to Stage-1 checkpoint file (.pt) to initialize Stage-2 training. Only used when --train-stage=2.",
+    )
 
     add_model_arguments(parser)
 
@@ -363,9 +370,9 @@ def load_checkpoint_if_available(
       Return a dict containing previously saved training info.
     """
     if params.start_batch > 0:
-        filename = params.exp_dir / f"checkpoint-{params.start_batch}.pt"
+        filename = params.stage1_dir / f"checkpoint-{params.start_batch}.pt"
     elif params.start_epoch > 1:
-        filename = params.exp_dir / f"epoch-{params.start_epoch-1}.pt"
+        filename = params.stage1_dir / f"epoch-{params.start_epoch-1}.pt"
     else:
         return None
 
