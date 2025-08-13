@@ -55,7 +55,7 @@ def get_codec(model, audio_path, device = torch.device("cuda", 0)):
     with torch.no_grad():
         audio, sr = torchaudio.load(audio_path)
         en_audio = audio.unsqueeze(0)
-        en_audio = convert_audio(en_audio, sr, model.sample_rate, model.channels)
+        en_audio = convert_audio(en_audio, sr, SAMPLE_RATE, model.channels)
         encoded_frames = model.encode(en_audio.to(device))
         # dim, nframe
         codes = torch.cat([encoded[0] for encoded in encoded_frames], dim=-1).squeeze(0).detach().cpu().numpy()
@@ -70,10 +70,9 @@ def norm(txt):
 def sentence2token(sentence, sp):
     return " ".join(np.array(sp.encode_as_ids(sentence), dtype=str))
 
-def preload_models():
+def preload_models(checkpoint):
     global model, codec, vocos
-    if not os.path.exists(checkpoints_dir): os.mkdir(checkpoints_dir)
-    if not os.path.exists(os.path.join(checkpoints_dir, model_checkpoint_name)):
+    if not os.path.exists(checkpoint):
         print('model not found')
         return
     # VALL-E
@@ -89,7 +88,7 @@ def preload_models():
         prepend_bos=True,
         num_quantizers=NUM_QUANTIZERS,
     ).to(device)
-    checkpoint = torch.load(os.path.join(checkpoints_dir, model_checkpoint_name), map_location='cpu')
+    checkpoint = torch.load(checkpoint, map_location='cpu', weights_only=False)
     missing_keys, unexpected_keys = model.load_state_dict(
         checkpoint["model"], strict=True
     )
@@ -98,14 +97,13 @@ def preload_models():
     codec = EncodecModel.encodec_model_24khz().to(device)
     codec.set_target_bandwidth(6.0)
     vocos = Vocos.from_pretrained('charactr/vocos-encodec-24khz').to(device)
-
 @torch.no_grad()
 def generate_audio(text, model_home,text_prompt=None, audio_prompt=None, prompt_lang='auto', target_lang='no-accent'):
     global model, codec, vocos, text_tokenizer, text_collater
     text = text.replace("\n", "").strip(" ")
     # detect language
-    if language == "auto":
-        language = langid.classify(text)[0]
+    #if language == "auto":
+        #language = langid.classify(text)[0]
     #lang_token = lang2token[language]
     #lang = token2lang[lang_token]
    # text = lang_token + text + lang_token
