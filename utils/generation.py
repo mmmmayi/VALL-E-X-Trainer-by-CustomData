@@ -3,9 +3,10 @@ import os
 import torch
 from vocos import Vocos
 import logging
+import re
 import langid
 langid.set_languages(['en', 'zh', 'ja'])
-
+import sentencepiece as spm
 import pathlib
 import platform
 if platform.system().lower() == 'windows':
@@ -20,12 +21,16 @@ from data.tokenizer import (
     AudioTokenizer,
     tokenize_audio,
 )
+from zhon.hanzi import punctuation
+from encodec import EncodecModel
+from encodec.utils import convert_audio
 from data.collation import get_text_token_collater
 from models.vallex import VALLE
 from utils.g2p import PhonemeBpeTokenizer
 from utils.sentence_cutter import split_text_into_sentences
 
 from macros import *
+import torchaudio
 
 device = torch.device("cpu")
 if torch.cuda.is_available():
@@ -46,22 +51,31 @@ vocos = None
 text_tokenizer = PhonemeBpeTokenizer(tokenizer_path="./utils/g2p/bpe_69.json")
 text_collater = get_text_token_collater()
 
+def get_codec(model, audio_path, device = torch.device("cuda", 0)):
+    with torch.no_grad():
+        audio, sr = torchaudio.load(audio_path)
+        en_audio = audio.unsqueeze(0)
+        en_audio = convert_audio(en_audio, sr, model.sample_rate, model.channels)
+        encoded_frames = model.encode(en_audio.to(device))
+        # dim, nframe
+        codes = torch.cat([encoded[0] for encoded in encoded_frames], dim=-1).squeeze(0).detach().cpu().numpy()
+        return codes
+
+def norm(txt):
+    import string
+    punctuation_string = string.punctuation
+    temp = re.sub('[{}]'.format(punctuation),"", txt)
+    return re.sub('[{}]'.format(punctuation_string),"", temp)
+
+def sentence2token(sentence, sp):
+    return " ".join(np.array(sp.encode_as_ids(sentence), dtype=str))
+
 def preload_models():
     global model, codec, vocos
     if not os.path.exists(checkpoints_dir): os.mkdir(checkpoints_dir)
     if not os.path.exists(os.path.join(checkpoints_dir, model_checkpoint_name)):
-        import wget
-        try:
-            logging.info(
-                "Downloading model from https://huggingface.co/Plachta/VALL-E-X/resolve/main/vallex-checkpoint.pt ...")
-            # download from https://huggingface.co/Plachta/VALL-E-X/resolve/main/vallex-checkpoint.pt to ./checkpoints/vallex-checkpoint.pt
-            wget.download("https://huggingface.co/Plachta/VALL-E-X/resolve/main/vallex-checkpoint.pt",
-                          out="./checkpoints/vallex-checkpoint.pt", bar=wget.bar_adaptive)
-        except Exception as e:
-            logging.info(e)
-            raise Exception(
-                "\n Model weights download failed, please go to 'https://huggingface.co/Plachta/VALL-E-X/resolve/main/vallex-checkpoint.pt'"
-                "\n manually download model weights and put it to {} .".format(os.getcwd() + "\checkpoints"))
+        print('model not found')
+        return
     # VALL-E
     model = VALLE(
         N_DIM,
@@ -81,25 +95,43 @@ def preload_models():
     )
     assert not missing_keys
     model.eval()
-
-    # Encodec
-    codec = AudioTokenizer(device)
-    
+    codec = EncodecModel.encodec_model_24khz().to(device)
+    codec.set_target_bandwidth(6.0)
     vocos = Vocos.from_pretrained('charactr/vocos-encodec-24khz').to(device)
 
 @torch.no_grad()
-def generate_audio(text, prompt=None, language='auto', accent='no-accent'):
+def generate_audio(text, model_home,text_prompt=None, audio_prompt=None, prompt_lang='auto', target_lang='no-accent'):
     global model, codec, vocos, text_tokenizer, text_collater
     text = text.replace("\n", "").strip(" ")
     # detect language
     if language == "auto":
         language = langid.classify(text)[0]
-    lang_token = lang2token[language]
-    lang = token2lang[lang_token]
-    text = lang_token + text + lang_token
+    #lang_token = lang2token[language]
+    #lang = token2lang[lang_token]
+   # text = lang_token + text + lang_token
 
     # load prompt
-    if prompt is not None:
+    if text_prompt is not None and audio_prompt is not None:
+        sp = spm.SentencePieceProcessor()
+        sp.load(os.path.join(model_home, "checkpoint/slam_vallex/pretrained_model/bpe.model"))
+        ar_at_dict = os.path.join(model_home, "checkpoint/slam_vallex/pretrained_model/dict.at.txt")
+        ar_st_dict = os.path.join(model_home, "checkpoint/slam_vallex/pretrained_model/dict.st.txt")
+        nar_at_dict = os.path.join(model_home,"checkpoint/slam_vallex/pretrained_model/dict.at.txt")
+        nar_st_dict = os.path.join(model_home, "checkpoint/slam_vallex/pretrained_model/dict.st.txt")
+        ref_codec = get_codec(codec, audio_prompt, device)
+        ref_st_tokens = sentence2token(norm(text_prompt), sp)
+        tgt_st_token = sentence2token(norm(text), sp)
+        print(ref_codec)
+        print(ref_st_tokens)
+        quit()
+        #ref_codec = " ".join(np.expand_dims(ref_codec[:, :].T, axis=0).flatten().astype(str))
+        #ref_at_tokens = nar_at_dict.encode_line(ref_codec, append_eos=False).type(torch.int32)
+
+
+
+
+
+
         prompt_path = prompt
         if not os.path.exists(prompt_path):
             prompt_path = "./presets/" + prompt + ".npz"
@@ -151,15 +183,15 @@ def generate_audio(text, prompt=None, language='auto', accent='no-accent'):
     return samples.squeeze().cpu().numpy()
 
 @torch.no_grad()
-def generate_audio_from_long_text(text, prompt=None, language='auto', accent='no-accent', mode='sliding-window'):
+def generate_audio_from_long_text(text, prompt=None, language='auto', accent='no-accent', mode='fixed-prompt'):
     """
     For long audio generation, two modes are available.
     fixed-prompt: This mode will keep using the same prompt the user has provided, and generate audio sentence by sentence.
     sliding-window: This mode will use the last sentence as the prompt for the next sentence, but has some concern on speaker maintenance.
     """
     global model, codec, vocos, text_tokenizer, text_collater
-    if prompt is None or prompt == "":
-        mode = 'sliding-window'  # If no prompt is given, use sliding-window mode
+    #if prompt is None or prompt == "":
+        #mode = 'sliding-window'  # If no prompt is given, use sliding-window mode
     sentences = split_text_into_sentences(text)
     # detect language
     if language == "auto":
