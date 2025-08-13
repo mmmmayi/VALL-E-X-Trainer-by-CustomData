@@ -66,7 +66,7 @@ def load_checkpoint(
     TODO: document it
     """
     logging.info(f"Loading checkpoint from {filename}")
-    checkpoint = torch.load(filename, map_location="cpu")
+    checkpoint = torch.load(filename, map_location="cpu", weights_only=False)
 
     if next(iter(checkpoint["model"])).startswith("module."):
         logging.info("Loading checkpoint saved by DDP")

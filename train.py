@@ -904,7 +904,15 @@ def run(rank, world_size, args):
 
     # 只在主进程(rank 0)初始化 Wandb
     if rank == 0:
-        wandb.init(entity='i2r-llm', project="mayi_generation",name="vallex-training-stage-1" ,config=params,resume='allow')
+        # 根据训练阶段设置 wandb 运行名称
+        if params.train_stage == 1:
+            wandb_name = "vallex-training-stage-1"
+        elif params.train_stage == 2:
+            wandb_name = "vallex-training-stage-2"
+        else:
+            wandb_name = "vallex-training-stage-0"  # 默认情况
+        
+        wandb.init(entity='i2r-llm', project="mayi_generation", name=wandb_name, config=params, resume='allow')
 
     if args.tensorboard and rank == 0:
         if params.train_stage:
@@ -1112,6 +1120,7 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
     args.exp_dir = Path(args.exp_dir)
+    args.stage1_dir = Path(args.stage1_dir)
 
 
     # 检查是否使用 torchrun 启动
