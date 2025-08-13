@@ -1124,17 +1124,9 @@ def main():
         if rank == 0:
             wandb.finish()
     else:
-        # 使用 mp.spawn 启动的情况
-        world_size = args.world_size
-        assert world_size >= 1
-        if world_size > 1:
-            mp.spawn(run, args=(world_size, args), nprocs=world_size, join=True)
-        else:
-            run(rank=0, world_size=1, args=args)
-        
-        # 只在单卡训练时或者完成分布式训练后才finish wandb
-        if args.world_size == 1:
-            wandb.finish()
+
+        run(rank=0, world_size=1, args=args)
+        wandb.finish()
 
 torch.set_num_threads(1)
 torch.set_num_interop_threads(1)
