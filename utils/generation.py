@@ -148,7 +148,7 @@ def generate_audio(text, model_home,text_prompt=None, audio_prompt=None, prompt_
     # Decode with Vocos
     #frames = encoded_frames.permute(1,0,2)
     #features = vocos.codes_to_features(encoded_frames)
-    at_8 = encoded_frames.reshape(1, -1).long()
+    at_8 = ref_at_tokens.reshape(1, -1).long()
     at_8 = nar_at_dict.string(at_8[0])
     codec_item = torch.LongTensor(list(map(int, at_8.strip().split()))).reshape(-1, 8).transpose(0, 1).cuda()
     features = vocos.codes_to_features(codec_item) 

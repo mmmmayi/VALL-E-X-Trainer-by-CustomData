@@ -1,0 +1,212 @@
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 11.8.0
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+I0813 23:16:10.275000 1370934 site-packages/torch/distributed/run.py:649] Using nproc_per_node=8.
+I0813 23:16:10.275000 1370934 site-packages/torch/distributed/launcher/api.py:195] Starting elastic_operator with launch configs:
+I0813 23:16:10.275000 1370934 site-packages/torch/distributed/launcher/api.py:195]   entrypoint       : train.py
+I0813 23:16:10.275000 1370934 site-packages/torch/distributed/launcher/api.py:195]   min_nodes        : 1
+I0813 23:16:10.275000 1370934 site-packages/torch/distributed/launcher/api.py:195]   max_nodes        : 1
+I0813 23:16:10.275000 1370934 site-packages/torch/distributed/launcher/api.py:195]   nproc_per_node   : 8
+I0813 23:16:10.275000 1370934 site-packages/torch/distributed/launcher/api.py:195]   run_id           : job_73686.pbs111
+I0813 23:16:10.275000 1370934 site-packages/torch/distributed/launcher/api.py:195]   rdzv_backend     : c10d
+I0813 23:16:10.275000 1370934 site-packages/torch/distributed/launcher/api.py:195]   rdzv_endpoint    : a2ap-dgx003.asp2p.nscc.sg:35000
+I0813 23:16:10.275000 1370934 site-packages/torch/distributed/launcher/api.py:195]   rdzv_configs     : {'timeout': 900}
+I0813 23:16:10.275000 1370934 site-packages/torch/distributed/launcher/api.py:195]   max_restarts     : 0
+I0813 23:16:10.275000 1370934 site-packages/torch/distributed/launcher/api.py:195]   monitor_interval : 0.1
+I0813 23:16:10.275000 1370934 site-packages/torch/distributed/launcher/api.py:195]   log_dir          : /mnt/scratch/log
+I0813 23:16:10.275000 1370934 site-packages/torch/distributed/launcher/api.py:195]   metrics_cfg      : {}
+I0813 23:16:10.275000 1370934 site-packages/torch/distributed/launcher/api.py:195] 
+I0813 23:16:10.311000 1370934 site-packages/torch/distributed/elastic/agent/server/api.py:860] [default] starting workers for entrypoint: python
+I0813 23:16:10.311000 1370934 site-packages/torch/distributed/elastic/agent/server/api.py:677] [default] Rendezvous'ing worker group
+I0813 23:16:10.559000 1370934 site-packages/torch/distributed/elastic/agent/server/api.py:525] [default] Rendezvous complete for workers. Result:
+I0813 23:16:10.559000 1370934 site-packages/torch/distributed/elastic/agent/server/api.py:525]   restart_count=0
+I0813 23:16:10.559000 1370934 site-packages/torch/distributed/elastic/agent/server/api.py:525]   master_addr=a2ap-dgx003.asp2p.nscc.sg
+I0813 23:16:10.559000 1370934 site-packages/torch/distributed/elastic/agent/server/api.py:525]   master_port=36685
+I0813 23:16:10.559000 1370934 site-packages/torch/distributed/elastic/agent/server/api.py:525]   group_rank=0
+I0813 23:16:10.559000 1370934 site-packages/torch/distributed/elastic/agent/server/api.py:525]   group_world_size=1
+I0813 23:16:10.559000 1370934 site-packages/torch/distributed/elastic/agent/server/api.py:525]   local_ranks=[0, 1, 2, 3, 4, 5, 6, 7]
+I0813 23:16:10.559000 1370934 site-packages/torch/distributed/elastic/agent/server/api.py:525]   role_ranks=[0, 1, 2, 3, 4, 5, 6, 7]
+I0813 23:16:10.559000 1370934 site-packages/torch/distributed/elastic/agent/server/api.py:525]   global_ranks=[0, 1, 2, 3, 4, 5, 6, 7]
+I0813 23:16:10.559000 1370934 site-packages/torch/distributed/elastic/agent/server/api.py:525]   role_world_sizes=[8, 8, 8, 8, 8, 8, 8, 8]
+I0813 23:16:10.559000 1370934 site-packages/torch/distributed/elastic/agent/server/api.py:525]   global_world_sizes=[8, 8, 8, 8, 8, 8, 8, 8]
+I0813 23:16:10.559000 1370934 site-packages/torch/distributed/elastic/agent/server/api.py:525] 
+I0813 23:16:10.559000 1370934 site-packages/torch/distributed/elastic/agent/server/api.py:685] [default] Starting worker group
+I0813 23:16:10.560000 1370934 site-packages/torch/distributed/elastic/agent/server/local_elastic_agent.py:298] use_agent_store: True
+I0813 23:16:10.560000 1370934 site-packages/torch/distributed/elastic/agent/server/local_elastic_agent.py:192] Environment variable 'TORCHELASTIC_ENABLE_FILE_TIMER' not found. Do not start FileTimerServer.
+I0813 23:16:10.560000 1370934 site-packages/torch/distributed/elastic/agent/server/local_elastic_agent.py:236] Environment variable 'TORCHELASTIC_HEALTH_CHECK_PORT' not found. Do not start health check.
+/opt/conda/lib/python3.10/site-packages/torchvision/io/image.py:13: UserWarning: Failed to load image Python extension: '/opt/conda/lib/python3.10/site-packages/torchvision/image.so: undefined symbol: _ZN3c1017RegisterOperatorsD1Ev'If you don't plan on using image functionality from `torchvision.io`, you can ignore this warning. Otherwise, there might be something wrong with your environment. Did you have `libjpeg` or `libpng` installed before building `torchvision` from source?
+  warn(
+/opt/conda/lib/python3.10/site-packages/torchvision/io/image.py:13: UserWarning: Failed to load image Python extension: '/opt/conda/lib/python3.10/site-packages/torchvision/image.so: undefined symbol: _ZN3c1017RegisterOperatorsD1Ev'If you don't plan on using image functionality from `torchvision.io`, you can ignore this warning. Otherwise, there might be something wrong with your environment. Did you have `libjpeg` or `libpng` installed before building `torchvision` from source?
+  warn(
+/opt/conda/lib/python3.10/site-packages/torchvision/io/image.py:13: UserWarning: Failed to load image Python extension: '/opt/conda/lib/python3.10/site-packages/torchvision/image.so: undefined symbol: _ZN3c1017RegisterOperatorsD1Ev'If you don't plan on using image functionality from `torchvision.io`, you can ignore this warning. Otherwise, there might be something wrong with your environment. Did you have `libjpeg` or `libpng` installed before building `torchvision` from source?
+  warn(
+/opt/conda/lib/python3.10/site-packages/torchvision/io/image.py:13: UserWarning: Failed to load image Python extension: '/opt/conda/lib/python3.10/site-packages/torchvision/image.so: undefined symbol: _ZN3c1017RegisterOperatorsD1Ev'If you don't plan on using image functionality from `torchvision.io`, you can ignore this warning. Otherwise, there might be something wrong with your environment. Did you have `libjpeg` or `libpng` installed before building `torchvision` from source?
+  warn(
+/opt/conda/lib/python3.10/site-packages/torchvision/io/image.py:13: UserWarning: Failed to load image Python extension: '/opt/conda/lib/python3.10/site-packages/torchvision/image.so: undefined symbol: _ZN3c1017RegisterOperatorsD1Ev'If you don't plan on using image functionality from `torchvision.io`, you can ignore this warning. Otherwise, there might be something wrong with your environment. Did you have `libjpeg` or `libpng` installed before building `torchvision` from source?
+  warn(
+/opt/conda/lib/python3.10/site-packages/torchvision/io/image.py:13: UserWarning: Failed to load image Python extension: '/opt/conda/lib/python3.10/site-packages/torchvision/image.so: undefined symbol: _ZN3c1017RegisterOperatorsD1Ev'If you don't plan on using image functionality from `torchvision.io`, you can ignore this warning. Otherwise, there might be something wrong with your environment. Did you have `libjpeg` or `libpng` installed before building `torchvision` from source?
+  warn(
+/opt/conda/lib/python3.10/site-packages/torchvision/io/image.py:13: UserWarning: Failed to load image Python extension: '/opt/conda/lib/python3.10/site-packages/torchvision/image.so: undefined symbol: _ZN3c1017RegisterOperatorsD1Ev'If you don't plan on using image functionality from `torchvision.io`, you can ignore this warning. Otherwise, there might be something wrong with your environment. Did you have `libjpeg` or `libpng` installed before building `torchvision` from source?
+  warn(
+/opt/conda/lib/python3.10/site-packages/torchvision/io/image.py:13: UserWarning: Failed to load image Python extension: '/opt/conda/lib/python3.10/site-packages/torchvision/image.so: undefined symbol: _ZN3c1017RegisterOperatorsD1Ev'If you don't plan on using image functionality from `torchvision.io`, you can ignore this warning. Otherwise, there might be something wrong with your environment. Did you have `libjpeg` or `libpng` installed before building `torchvision` from source?
+  warn(
+Traceback (most recent call last):
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/train.py", line 52, in <module>
+    from test import get_model
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/test.py", line 1, in <module>
+    from utils.generation import SAMPLE_RATE, generate_audio, preload_models
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/utils/generation.py", line 30, in <module>
+Traceback (most recent call last):
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/train.py", line 52, in <module>
+    from test import get_model
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/test.py", line 1, in <module>
+    from utils.generation import SAMPLE_RATE, generate_audio, preload_models
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/utils/generation.py", line 30, in <module>
+    from utils.sentence_cutter import split_text_into_sentences
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/utils/sentence_cutter.py", line 3, in <module>
+    from utils.sentence_cutter import split_text_into_sentences
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/utils/sentence_cutter.py", line 3, in <module>
+    import sudachipy
+ModuleNotFoundError: No module named 'sudachipy'
+    import sudachipy
+ModuleNotFoundError: No module named 'sudachipy'
+Traceback (most recent call last):
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/train.py", line 52, in <module>
+    from test import get_model
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/test.py", line 1, in <module>
+    from utils.generation import SAMPLE_RATE, generate_audio, preload_models
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/utils/generation.py", line 30, in <module>
+    from utils.sentence_cutter import split_text_into_sentences
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/utils/sentence_cutter.py", line 3, in <module>
+    import sudachipy
+ModuleNotFoundError: No module named 'sudachipy'
+Traceback (most recent call last):
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/train.py", line 52, in <module>
+    from test import get_model
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/test.py", line 1, in <module>
+    from utils.generation import SAMPLE_RATE, generate_audio, preload_models
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/utils/generation.py", line 30, in <module>
+    from utils.sentence_cutter import split_text_into_sentences
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/utils/sentence_cutter.py", line 3, in <module>
+    import sudachipy
+ModuleNotFoundError: No module named 'sudachipy'
+Traceback (most recent call last):
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/train.py", line 52, in <module>
+    from test import get_model
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/test.py", line 1, in <module>
+    from utils.generation import SAMPLE_RATE, generate_audio, preload_models
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/utils/generation.py", line 30, in <module>
+    from utils.sentence_cutter import split_text_into_sentences
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/utils/sentence_cutter.py", line 3, in <module>
+    import sudachipy
+ModuleNotFoundError: No module named 'sudachipy'
+Traceback (most recent call last):
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/train.py", line 52, in <module>
+    from test import get_model
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/test.py", line 1, in <module>
+    from utils.generation import SAMPLE_RATE, generate_audio, preload_models
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/utils/generation.py", line 30, in <module>
+    from utils.sentence_cutter import split_text_into_sentences
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/utils/sentence_cutter.py", line 3, in <module>
+    import sudachipy
+ModuleNotFoundError: No module named 'sudachipy'
+Traceback (most recent call last):
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/train.py", line 52, in <module>
+    from test import get_model
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/test.py", line 1, in <module>
+    from utils.generation import SAMPLE_RATE, generate_audio, preload_models
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/utils/generation.py", line 30, in <module>
+    from utils.sentence_cutter import split_text_into_sentences
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/utils/sentence_cutter.py", line 3, in <module>
+    import sudachipy
+ModuleNotFoundError: No module named 'sudachipy'
+Traceback (most recent call last):
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/train.py", line 52, in <module>
+    from test import get_model
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/test.py", line 1, in <module>
+    from utils.generation import SAMPLE_RATE, generate_audio, preload_models
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/utils/generation.py", line 30, in <module>
+    from utils.sentence_cutter import split_text_into_sentences
+  File "/home/users/astar/ares/ma_yi/code/VALL-E-X-Trainer-by-CustomData/utils/sentence_cutter.py", line 3, in <module>
+    import sudachipy
+ModuleNotFoundError: No module named 'sudachipy'
+W0813 23:16:20.825000 1370934 site-packages/torch/distributed/elastic/multiprocessing/api.py:900] Sending process 1371574 closing signal SIGTERM
+W0813 23:16:20.825000 1370934 site-packages/torch/distributed/elastic/multiprocessing/api.py:900] Sending process 1371575 closing signal SIGTERM
+W0813 23:16:20.827000 1370934 site-packages/torch/distributed/elastic/multiprocessing/api.py:900] Sending process 1371577 closing signal SIGTERM
+W0813 23:16:20.827000 1370934 site-packages/torch/distributed/elastic/multiprocessing/api.py:900] Sending process 1371578 closing signal SIGTERM
+W0813 23:16:20.828000 1370934 site-packages/torch/distributed/elastic/multiprocessing/api.py:900] Sending process 1371579 closing signal SIGTERM
+W0813 23:16:20.829000 1370934 site-packages/torch/distributed/elastic/multiprocessing/api.py:900] Sending process 1371580 closing signal SIGTERM
+W0813 23:16:20.830000 1370934 site-packages/torch/distributed/elastic/multiprocessing/api.py:900] Sending process 1371581 closing signal SIGTERM
+E0813 23:16:20.945000 1370934 site-packages/torch/distributed/elastic/multiprocessing/api.py:874] failed (exitcode: 1) local_rank: 2 (pid: 1371576) of binary: /opt/conda/bin/python
+I0813 23:16:20.954000 1370934 site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py:368] ('local_rank %s FAILED with no error file. Decorate your entrypoint fn with @record for traceback info. See: https://pytorch.org/docs/stable/elastic/errors.html', 2)
+Traceback (most recent call last):
+  File "/opt/conda/bin/torchrun", line 8, in <module>
+    sys.exit(main())
+  File "/opt/conda/lib/python3.10/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 355, in wrapper
+    return f(*args, **kwargs)
+  File "/opt/conda/lib/python3.10/site-packages/torch/distributed/run.py", line 892, in main
+    run(args)
+  File "/opt/conda/lib/python3.10/site-packages/torch/distributed/run.py", line 883, in run
+    elastic_launch(
+  File "/opt/conda/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 139, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/opt/conda/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 270, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+train.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2025-08-13_23:16:20
+  host      : a2ap-dgx003.asp2p.nscc.sg
+  rank      : 2 (local_rank: 2)
+  exitcode  : 1 (pid: 1371576)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
+pbsdsh: task 0x00000000 exit status 1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			Resource Usage on 2025-08-13 23:16:27.066664:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	JobId: 73686.pbs111
+	Project: 13003558
+	Exit Status: 0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	NCPUs: Requested(112), Used(112)
+	CPU Time Used: 00:02:16
+	Memory: Requested(1880gb), Used(4476548kb)
+	Vmem Used: 4685276kb
+	Walltime: Requested(120:00:00), Used(00:00:20)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	Execution Nodes Used: (a2ap-dgx003:ncpus=112:ngpus=8:mem=1971322880kb)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	GPU Duration: 44.26secs
+	GPU Power Consumed: 71.37W
+	GPU Max GPU Memory Used: 0.0B
+	Memory Throughput Rate (Average): a2ap-dgx003:(gpu1:0%+gpu0:0%+gpu2:0%+gpu3:0%+gpu5:0%+gpu4:0%+gpu6:0%+gpu7:0%)
+	Memory Throughput Rate (Max): a2ap-dgx003:(gpu1:0%+gpu0:0%+gpu2:0%+gpu3:0%+gpu5:0%+gpu4:0%+gpu6:0%+gpu7:0%)
+	Memory Throughput Rate (Min): a2ap-dgx003:(gpu1:0%+gpu0:0%+gpu2:0%+gpu3:0%+gpu5:0%+gpu4:0%+gpu6:0%+gpu7:0%)
+	GPU SM Utilization (Average): a2ap-dgx003:(gpu1:0%+gpu0:0%+gpu2:0%+gpu3:0%+gpu5:0%+gpu4:0%+gpu6:0%+gpu7:0%)
+	GPU SM Utilization (Max): a2ap-dgx003:(gpu1:0%+gpu0:0%+gpu2:0%+gpu3:0%+gpu5:0%+gpu4:0%+gpu6:0%+gpu7:0%)
+	GPU SM Utilization (Min): a2ap-dgx003:(gpu1:0%+gpu0:0%+gpu2:0%+gpu3:0%+gpu5:0%+gpu4:0%+gpu6:0%+gpu7:0%)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Warning: All GPUs have a percentage of 0 utilisation.
+GPU application profile: Idle
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
