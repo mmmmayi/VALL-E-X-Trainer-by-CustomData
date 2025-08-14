@@ -5,7 +5,7 @@
 #PBS -q normal
 #PBS -P 13003558
 #PBS -j oe
-#PBS -l container_image=/scratch/users/astar/ares/ma_yi/vallex_custom_v2.sqsh
+#PBS -l container_image=/scratch/users/astar/ares/ma_yi/valle_custom_v3.sqsh
 #PBS -l container_name=tts
 #PBS -l enroot_env_file=/scratch/users/astar/ares/suns1/workspace/multimodal_trainer/scripts/a2ap_scripts/enroot_scripts/env.conf
 
@@ -21,15 +21,15 @@ export TMPDIR=$SCRATCH_DIR/tmp
 mkdir -p /raid/local/containers/enroot-data/${PBS_JOBID}/tts
 
 #change these parameters
-EXP_NAME=stage-2-StartEpoch-5
+EXP_NAME=stage-2-StartEpoch-9
 PRE_NAME=stage-1
 STAGE=2
-START_EPOCH=6
+START_EPOCH=10
 #if your experiment config yaml is in config/experiment/suns1, then set EXP_PATH to experiment.${username}
 EXP_PATH=/scratch/users/astar/ares/ma_yi/output/vallex/exp/
 
 #If your run complains about HF permission error, then you might have to set this to 1
-HF_HUB_OFFLINE=0
+HF_HUB_OFFLINE=1
 
 #Do not change these unless you are sure what you are doing
 #make sure there is a cache folder in your scratch folder 

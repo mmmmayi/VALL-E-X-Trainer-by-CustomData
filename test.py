@@ -3,7 +3,7 @@ from scipy.io.wavfile import write as write_wav
 from IPython.display import Audio
 
 # download and load all models
-checkpoint='/scratch/users/astar/ares/ma_yi/output/vallex/exp/stage-2/epoch-2.pt'
+checkpoint='/scratch/users/astar/ares/ma_yi/output/vallex/exp/stage-2/epoch-5.pt'
 preload_models(checkpoint)
 
 # generate audio from text

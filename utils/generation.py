@@ -146,7 +146,11 @@ def generate_audio(text, model_home,text_prompt=None, audio_prompt=None, prompt_
         tgt_st_token = sentence2token(norm(text), sp)
         ref_st_tokens = ar_st_dict.encode_line(ref_st_tokens, append_eos=False).long()
         tgt_st_token = ar_st_dict.encode_line(tgt_st_token, append_eos=False).long()
-
+        if tgt_st_token[-1].data != ar_st_dict.eos():
+            tgt_st_token = torch.cat([tgt_st_token, torch.LongTensor([ar_st_dict.eos()])])
+   
+        if ref_st_tokens[-1].data == ar_st_dict.eos():
+            ref_st_tokens = ref_st_tokens[:-1]
     else:
         print("no prompt")
         quit()
@@ -170,8 +174,8 @@ def generate_audio(text, model_home,text_prompt=None, audio_prompt=None, prompt_
     # Decode with Vocos
     #frames = encoded_frames.permute(1,0,2)
     #features = vocos.codes_to_features(encoded_frames)
-    at_8 = ref_at_tokens.reshape(1, -1).long()
-    at_8 = nar_at_dict.string(at_8[0])
+    at_8 = encoded_frames.reshape(1, -1).long()
+    at_8 = ar_at_dict.string(at_8[0])
     codec_item = torch.LongTensor(list(map(int, at_8.strip().split()))).reshape(-1, 8).transpose(0, 1).cuda()
     features = vocos.codes_to_features(codec_item) 
     samples = vocos.decode(features, bandwidth_id=torch.tensor([2], device=device))
