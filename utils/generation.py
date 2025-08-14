@@ -60,7 +60,29 @@ def get_codec(model, audio_path, device = torch.device("cuda", 0)):
         # dim, nframe
         codes = torch.cat([encoded[0] for encoded in encoded_frames], dim=-1).squeeze(0).detach().cpu().numpy()
         return codes
+def get_model(device):
 
+    # VALL-E
+    model = VALLE(
+        N_DIM,
+        NUM_HEAD,
+        NUM_LAYERS,
+        norm_first=True,
+        add_prenet=False,
+        prefix_mode=PREFIX_MODE,
+        share_embedding=True,
+        nar_scale_factor=1.0,
+        prepend_bos=True,
+        num_quantizers=NUM_QUANTIZERS,
+    ).to(device)
+
+
+    # Encodec
+    codec = AudioTokenizer(device)
+    
+    vocos = Vocos.from_pretrained('charactr/vocos-encodec-24khz').to(device)
+    
+    return model, codec, vocos
 def norm(txt):
     import string
     punctuation_string = string.punctuation
