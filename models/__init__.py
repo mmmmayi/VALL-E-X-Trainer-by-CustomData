@@ -4,7 +4,6 @@ import torch.nn as nn
 # from icefall.utils import AttributeDict, str2bool
 
 from .macros import (
-    NUM_AUDIO_TOKENS,
     NUM_MEL_BINS,
     NUM_SPEAKER_CLASSES,
     NUM_TEXT_TOKENS,

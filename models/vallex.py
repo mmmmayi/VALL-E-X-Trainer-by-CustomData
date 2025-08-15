@@ -30,7 +30,7 @@ from modules.transformer import (
     TransformerEncoderLayer,
 )
 
-from .macros import NUM_AUDIO_TOKENS, NUM_TEXT_TOKENS
+from .macros import BOS, EOS, PAD, UNK, NUM_TEXT_TOKENS, TOTAL_AUDIO_TOKENS
 from .visualizer import visualize
 from train_utils.utils import make_pad_mask
 from torchmetrics.classification import MulticlassAccuracy
@@ -90,7 +90,7 @@ class VALLF(nn.Module):
         # ID NUM_AUDIO_TOKENS + 1 -> BOS
         self.ar_audio_prepend_bos = prepend_bos
         self.ar_audio_embedding = TokenEmbedding(
-            d_model, NUM_AUDIO_TOKENS + 1 + int(prepend_bos)
+            d_model, TOTAL_AUDIO_TOKENS
         )
 
         # PreNet
@@ -152,15 +152,15 @@ class VALLF(nn.Module):
             norm=LayerNorm(d_model) if norm_first else None,
         )
         self.ar_predict_layer = nn.Linear(
-            d_model, NUM_AUDIO_TOKENS + 1, bias=False
+            d_model, TOTAL_AUDIO_TOKENS, bias=False
         )
         
         self.ar_accuracy_metric = MulticlassAccuracy(
-            NUM_AUDIO_TOKENS + 1,
+            TOTAL_AUDIO_TOKENS,
             top_k=10,
             average="micro",
             multidim_average="global",
-            ignore_index=NUM_AUDIO_TOKENS,
+            ignore_index=PAD,
         )
 
         self.rng = random.Random(0)
@@ -171,9 +171,9 @@ class VALLF(nn.Module):
         assert num_quantizers >= 1
         if num_quantizers > 1:
             self.nar_audio_embeddings = nn.ModuleList(
-                [TokenEmbedding(nar_d_model, NUM_AUDIO_TOKENS + 1)]
+                [TokenEmbedding(nar_d_model, TOTAL_AUDIO_TOKENS)]
                 + [
-                    TokenEmbedding(nar_d_model, NUM_AUDIO_TOKENS)
+                    TokenEmbedding(nar_d_model, TOTAL_AUDIO_TOKENS)
                     for i in range(num_quantizers - 1)
                 ]
             )  # W_a
@@ -248,7 +248,7 @@ class VALLF(nn.Module):
             )
             self.nar_predict_layers = nn.ModuleList(
                 [
-                    nn.Linear(nar_d_model, NUM_AUDIO_TOKENS, bias=False)
+                    nn.Linear(nar_d_model, TOTAL_AUDIO_TOKENS, bias=False)
                     for i in range(num_quantizers - 1)
                 ]
             )
@@ -272,11 +272,11 @@ class VALLF(nn.Module):
                     ].weight = self.nar_audio_embeddings[j + 2].weight
             
             self.nar_accuracy_metric = MulticlassAccuracy(
-                NUM_AUDIO_TOKENS + 1,
+                TOTAL_AUDIO_TOKENS,
                 top_k=10,
                 average="micro",
                 multidim_average="global",
-                ignore_index=NUM_AUDIO_TOKENS,
+                ignore_index=PAD,
             )
 
     def stage_parameters(self, stage: int = 1) -> Iterator[nn.Parameter]:
@@ -314,7 +314,7 @@ class VALLF(nn.Module):
         # inputs, targets
         if self.ar_audio_prepend_bos:
             return (
-                F.pad(targets[:, :-1], (1, 0), value=NUM_AUDIO_TOKENS + 1),
+                F.pad(targets[:, :-1], (1, 0), value=BOS),
                 targets,
             )
 
@@ -361,7 +361,7 @@ class VALLF(nn.Module):
                     )
                     codes[
                         b, start : start + prefix_len, nar_stage
-                    ] = NUM_AUDIO_TOKENS
+                    ] = PAD
                 y_prompts_codes = torch.stack(y_prompts_codes, dim=0)
             else:
                 prefix_len = y_prompts_codes.shape[1]
@@ -438,7 +438,7 @@ class VALLF(nn.Module):
         # Training
         # AR Decoder
         y, targets = self.pad_y_eos(
-            codes[..., 0], y_mask_int, eos_id=NUM_AUDIO_TOKENS
+            codes[..., 0], y_mask_int, eos_id=PAD
         )
 
         if train_stage in [0, 1]:
@@ -494,7 +494,7 @@ class VALLF(nn.Module):
             )
 
             y_len = y_lens.max()
-            targets = codes[..., nar_stage] + NUM_AUDIO_TOKENS * y_mask_int
+            targets = codes[..., nar_stage] + PAD * y_mask_int
             if self.prefix_mode in [2, 4]:
                 targets = targets
                 y_mask = F.pad(y_mask, (y_emb.shape[1] - y_len, 0), value=False)
@@ -528,7 +528,7 @@ class VALLF(nn.Module):
                 F.cross_entropy(
                     logits,
                     targets,
-                    ignore_index=NUM_AUDIO_TOKENS,
+                    ignore_index=PAD,
                     reduction=reduction,
                 )
                 * (total_length / (total_length - prefix_len * x.shape[0]))
@@ -597,7 +597,7 @@ class VALLF(nn.Module):
         # TODO: Managing decoder steps avoid repetitive computation
         y = prompts[..., 0]
         if self.ar_audio_prepend_bos:
-            y = F.pad(y, (1, 0), value=NUM_AUDIO_TOKENS + 1)
+            y = F.pad(y, (1, 0), value=BOS)
 
         while True:
             y_emb = self.ar_audio_embedding(y)
@@ -624,8 +624,8 @@ class VALLF(nn.Module):
             )
 
             if (
-                torch.argmax(logits, dim=-1)[0] == NUM_AUDIO_TOKENS
-                or samples[0, 0] == NUM_AUDIO_TOKENS
+                torch.argmax(logits, dim=-1)[0] == PAD
+                or samples[0, 0] == PAD
                 or (y.shape[1] - prefix_len) > x_lens.max() * 16
             ):
                 if prompts.shape[1] == y.shape[1]:
@@ -805,7 +805,7 @@ class VALLE(VALLF):
         codes = y.type(torch.int64) * (1 - y_mask_int.unsqueeze(dim=-1))#将填充位置的音频codes设置为0
 
         y, targets = self.pad_y_eos(
-            codes[..., 0], y_mask_int, eos_id=NUM_AUDIO_TOKENS
+            codes[..., 0], y_mask_int, eos_id=PAD
         )
 
         x_len = x_lens.max()
@@ -899,7 +899,7 @@ class VALLE(VALLF):
             )
 
             y_len = y_lens.max()
-            targets = codes[..., nar_stage] + NUM_AUDIO_TOKENS * y_mask_int
+            targets = codes[..., nar_stage] + PAD * y_mask_int
             if self.prefix_mode in [2, 4]:
                 xy_padding_mask = torch.concat(
                     [
@@ -932,7 +932,7 @@ class VALLE(VALLF):
                 F.cross_entropy(
                     logits,
                     targets,
-                    ignore_index=NUM_AUDIO_TOKENS,
+                    ignore_index=PAD,
                     reduction=reduction,
                 )
                 * (total_length / (total_length - prefix_len * x.shape[0]))
@@ -1013,7 +1013,7 @@ class VALLE(VALLF):
         # TODO: Managing decoder steps avoid repetitive computation
         y = prompts[..., 0]
         if self.ar_audio_prepend_bos:
-            y = F.pad(y, (1, 0), value=NUM_AUDIO_TOKENS + 1)
+            y = F.pad(y, (1, 0), value=BOS)
 
         x_len = x_lens.max()
         x_attn_mask = torch.zeros((x_len, x_len), dtype=torch.bool)
@@ -1068,9 +1068,9 @@ class VALLE(VALLF):
             samples, current_logprobs = topk_sampling(
                 logits, top_k=top_k, top_p=1, temperature=temperature
             )
-            sum_logprobs += current_logprobs * (y[:, -1] != NUM_AUDIO_TOKENS)
-            samples[y[:, -1] == NUM_AUDIO_TOKENS] = NUM_AUDIO_TOKENS
-            completed = (samples[:, -1] == NUM_AUDIO_TOKENS).all()
+            sum_logprobs += current_logprobs * (y[:, -1] != PAD)
+            samples[y[:, -1] == PAD] = PAD
+            completed = (samples[:, -1] == PAD).all()
             if (
                 completed
                 or (y.shape[1] - prompts.shape[1]) > x_lens.max() * 16
@@ -1079,14 +1079,14 @@ class VALLE(VALLF):
                     raise SyntaxError(
                         "well trained model shouldn't reach here."
                     )
-                lengths = torch.sum(y != NUM_AUDIO_TOKENS, dim=1)
+                lengths = torch.sum(y != PAD, dim=1)
                 avg_logprobs = sum_logprobs / lengths ** length_penalty
                 # choose the best beam according to sum_logprobs
                 best_beam = y[torch.argmax(avg_logprobs), :]
                 worst_beam = y[torch.argmin(avg_logprobs), :]
                 # strip all eos tokens
-                best_beam = best_beam[best_beam != NUM_AUDIO_TOKENS]
-                worst_beam = worst_beam[worst_beam != NUM_AUDIO_TOKENS]
+                best_beam = best_beam[best_beam != PAD]
+                worst_beam = worst_beam[worst_beam != PAD]
                 if return_worst:
                     y = worst_beam.unsqueeze(0)
                 else:

@@ -2,7 +2,12 @@
 NUM_TEXT_TOKENS = 32004
 
 # Audio
-NUM_AUDIO_TOKENS = 1028  # EnCodec RVQ bins
+TOTAL_AUDIO_TOKENS = 1028  # EnCodec RVQ bins
+BOS = 0
+EOS = 2
+PAD = 1
+UNK = 3
+
 NUM_MEL_BINS = 100  # BigVGAN bigvgan_24khz_100band
 
 

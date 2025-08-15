@@ -298,7 +298,7 @@ class AudioDataset(torch.utils.data.Dataset):
             at = self.get_at(idx,self.en_at_dataset)
             st = self.en_st_dataset[idx]
 
-        cptpho_tokens, enroll_x_lens = text_collater([st])
+        cptpho_tokens, enroll_x_lens = text_collater([st]) #no change
         cptpho_tokens = cptpho_tokens.squeeze(0)
         text_token_lens = enroll_x_lens[0]
         return {
