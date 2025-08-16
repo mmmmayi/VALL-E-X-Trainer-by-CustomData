@@ -367,6 +367,10 @@ def setup_dist(
         torch.cuda.set_device(rank)
     else:
         dist.init_process_group("nccl")
+        # 在多节点环境中设置正确的本地设备
+        if "LOCAL_RANK" in os.environ:
+            local_rank = int(os.environ["LOCAL_RANK"])
+            torch.cuda.set_device(local_rank)
 
 def register_inf_check_hooks(model: nn.Module) -> None:
     """Registering forward hook on each module, to check

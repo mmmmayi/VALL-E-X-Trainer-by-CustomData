@@ -926,7 +926,12 @@ def run(rank, world_size, args):
 
     device = torch.device("cpu")
     if torch.cuda.is_available():
-        device = torch.device("cuda", rank)
+        # 在多节点环境中使用 LOCAL_RANK 而不是全局 RANK
+        if "LOCAL_RANK" in os.environ:
+            local_rank = int(os.environ["LOCAL_RANK"])
+            device = torch.device("cuda", local_rank)
+        else:
+            device = torch.device("cuda", rank)
         # https://pytorch.org/docs/stable/notes/cuda.html#tensorfloat-32-tf32-on-ampere-devices
         torch.backends.cudnn.allow_tf32 = True
         torch.backends.cuda.matmul.allow_tf32 = True
@@ -954,7 +959,12 @@ def run(rank, world_size, args):
     model.to(device)
     if world_size > 1:
         logging.info("Using DDP")
-        model = DDP(model, device_ids=[rank], find_unused_parameters=True)
+        # 在多节点环境中使用 LOCAL_RANK
+        if "LOCAL_RANK" in os.environ:
+            local_rank = int(os.environ["LOCAL_RANK"])
+            model = DDP(model, device_ids=[local_rank], find_unused_parameters=True)
+        else:
+            model = DDP(model, device_ids=[rank], find_unused_parameters=True)
 
     if params.train_stage:
         _model = model.module if isinstance(model, DDP) else model
