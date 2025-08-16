@@ -39,6 +39,8 @@ WANDB_DIR=$ROOT_DIR/cache/wandb/log
 MASTER_NODE=$(head -n 1 $PBS_NODEFILE)
 NNODES=$(cat $PBS_NODEFILE | wc -l)
 
+mkdir -p $SCRATCH_DIR/output/vallex/exp/$EXP_NAME/logs
+
 pbsdsh bash $CODE_DIR/enroot_start.sh \
     $HF_HOME \
     $ROOT_DIR \
