@@ -161,6 +161,7 @@ class VALLF(nn.Module):
             average="micro",
             multidim_average="global",
             ignore_index=PAD,
+            sync_on_compute=True,
         )
 
         self.rng = random.Random(0)
@@ -277,6 +278,7 @@ class VALLF(nn.Module):
                 average="micro",
                 multidim_average="global",
                 ignore_index=PAD,
+                sync_on_compute=True,
             )
 
     def stage_parameters(self, stage: int = 1) -> Iterator[nn.Parameter]:
@@ -533,8 +535,8 @@ class VALLF(nn.Module):
                 )
                 * (total_length / (total_length - prefix_len * x.shape[0]))
             )
-            metrics["NarTop10Accuracy"] = (
-                self.nar_accuracy_metric(
+            try:
+                nar_accuracy = self.nar_accuracy_metric(
                     F.pad(
                         logits.detach(),
                         (0, 0, 0, 1, 0, 0),
@@ -542,8 +544,12 @@ class VALLF(nn.Module):
                     ),
                     targets,
                 ).item()
-                * total_length
-            )
+                metrics["NarTop10Accuracy"] = nar_accuracy * total_length
+            except Exception as e:
+                # 如果metric计算失败，使用默认值避免训练中断
+                import logging
+                logging.warning(f"NAR accuracy metric failed: {e}")
+                metrics["NarTop10Accuracy"] = 0.0
 
         if train_stage == 0:
             total_loss = total_loss / 2.0
@@ -937,8 +943,8 @@ class VALLE(VALLF):
                 )
                 * (total_length / (total_length - prefix_len * x.shape[0]))
             )
-            metrics["NarTop10Accuracy"] = (
-                self.nar_accuracy_metric(
+            try:
+                nar_accuracy = self.nar_accuracy_metric(
                     F.pad(
                         logits.detach(),
                         (0, 0, 0, 1, 0, 0),
@@ -946,8 +952,12 @@ class VALLE(VALLF):
                     ),
                     targets,
                 ).item()
-                * total_length
-            )
+                metrics["NarTop10Accuracy"] = nar_accuracy * total_length
+            except Exception as e:
+                # 如果metric计算失败，使用默认值避免训练中断
+                import logging
+                logging.warning(f"NAR accuracy metric failed: {e}")
+                metrics["NarTop10Accuracy"] = 0.0
 
         if train_stage == 0:
             total_loss = total_loss / 2.0
